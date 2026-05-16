@@ -28,7 +28,7 @@ bereich = st.sidebar.radio("Bereich wechseln:", ["Kunden-Portal", "Admin-Bereich
 # =====================================================================
 if bereich == "Kunden-Portal":
   st.title("Willkommen im Redline Studio")
-    st.write("Schön, dass du da bist! Bitte frage hier deinen Wunschtermin an.")
+  st.write("Schön, dass du da bist! Bitte frage hier deinen Wunschtermin an.")
     
     # Formular für den Kunden
     with st.form("buchungs_formular"):
