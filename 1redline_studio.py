@@ -16,7 +16,7 @@ May 17th, 2026
 Never
 Add comment
 Not a member of Pastebin yet? Sign Up, it unlocks many cool features!
-4.04 KB | None |
+3.80 KB | None |
 
     import streamlit as st
     import pandas as pd
@@ -34,13 +34,10 @@ Not a member of Pastebin yet? Sign Up, it unlocks many cool features!
     # --- DESIGN & STYLE (Weinrot & Gold) ---
     st.markdown("""
         <style>
-        /* Hintergrund und Textfarben */
         .stApp {
             background-color: #ffffff;
             color: #333333;
         }
-     
-        /* Haupt-Banner oben */
         .main-header {
             background-color: #721c24;
             padding: 30px;
@@ -61,8 +58,6 @@ Not a member of Pastebin yet? Sign Up, it unlocks many cool features!
             font-style: italic;
             margin-top: 5px;
         }
-     
-        /* Buttons */
         .stButton>button {
             background-color: #721c24 !important;
             color: #d4af37 !important;
@@ -93,7 +88,6 @@ Not a member of Pastebin yet? Sign Up, it unlocks many cool features!
         with col2:
             name_eingabe = st.text_input("Dein vollständiger Name *", placeholder="Hier eintippen...")
      
-            # Der reparierte Button, der immer aktiv ist
             if st.button("Anmelden & Weiter zur Buchung", use_container_width=True):
                 if name_eingabe.strip() == "":
                     st.error("Bitte gib einen Namen ein.")
@@ -108,7 +102,6 @@ Not a member of Pastebin yet? Sign Up, it unlocks many cool features!
     elif st.session_state.user == "Admin":
         st.markdown("<div class='main-header'><h1>Redline Studio</h1><p>Admin-Schaltzentrale</p></div>", unsafe_allow_html=True)
      
-        # Sidebar für den Logout
         with st.sidebar:
             st.write(f"Logged in als: **{st.session_state.user}**")
             if st.button("Abmelden", use_container_width=True):
@@ -118,7 +111,6 @@ Not a member of Pastebin yet? Sign Up, it unlocks many cool features!
         st.success("Erfolgreich als Admin angemeldet!")
         st.subheader("📊 Deine Studio-Übersicht")
      
-        # Platzhalter für die Excel-Rechner und Kundenkartei
         col1, col2 = st.columns(2)
         with col1:
             st.info("📂 Einnahmen- & Ausgabenrechner (In Kürze)")
