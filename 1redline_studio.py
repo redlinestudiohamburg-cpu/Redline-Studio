@@ -272,4 +272,149 @@ elif st.session_state.user == "Admin":
             for art, dauer in list(st.session_state.zeiten_naegel.items()):
                 st.session_state.zeiten_naegel[art] = st.number_input(f"Dauer für: {art} (Min)", value=int(dauer), step=5, key=f"edit_{art}")
         with col_z2:
-            st.markdown("<div class='card'><h4>🧼 Desinfektion & Aufbereitung</h4>
+            st.markdown("<div class='card'><h4>🧼 Desinfektion & Aufbereitung</h4></div>", unsafe_allow_html=True)
+            st.session_state.puffer_zeit = st.number_input("Pufferzeit zwischen Kunden (Minuten)", value=st.session_state.puffer_zeit, step=5)
+
+    # TAB 3: KUNDENKARTEI
+    with menue[2]:
+        st.subheader("👥 Digitale Kundenkartei (Erweiterbar)")
+        col_k_form, col_k_view = st.columns([1, 2])
+        with col_k_form:
+            st.markdown("<div class='card'><h4>➕ Neue Tabellen-Spalte hinzufügen</h4></div>", unsafe_allow_html=True)
+            neue_spalte = st.text_input("Name für neues Datenfeld", placeholder="z.B. Instagram, Allergien")
+            if st.button("➕ Spalte der Kartei hinzufügen", use_container_width=True):
+                if neue_spalte and neue_spalte not in st.session_state.kunden_spalten:
+                    st.session_state.kunden_spalten.append(neue_spalte.strip())
+                    st.session_state.kunden[neue_spalte.strip()] = ""
+                    st.success(f"Spalte '{neue_spalte}' hinzugefügt!")
+                    st.rerun()
+            
+            st.write("---")
+            st.markdown("<div class='card'><h4>👤 Neuen Kunden anlegen</h4></div>", unsafe_allow_html=True)
+            kunden_daten = {}
+            for spalte in st.session_state.kunden_spalten:
+                if spalte == "Farbe":
+                    kunden_daten[spalte] = st.color_picker("🎨 Erkennungs-Farbe für Kalender", "#721c24")
+                elif spalte == "Notizen":
+                    kunden_daten[spalte] = st.text_area(spalte)
+                else:
+                    kunden_daten[spalte] = st.text_input(spalte)
+                    
+            if st.button("Kunde abspeichern", use_container_width=True):
+                if kunden_daten.get("Kunden-Name") == "":
+                    st.error("Bitte mindestens den Kunden-Namen eingeben!")
+                else:
+                    neuer_kunde = pd.DataFrame([kunden_daten], columns=st.session_state.kunden_spalten)
+                    st.session_state.kunden = pd.concat([st.session_state.kunden, neuer_kunde], ignore_index=True)
+                    st.success("Kunde erfolgreich gesichert!")
+                    st.rerun()
+        with col_k_view:
+            st.dataframe(st.session_state.kunden, use_container_width=True)
+
+    # TAB 4: DOKUMENTE & QUITTUNGEN (Mit Logo!)
+    with menue[3]:
+        st.subheader("📄 Professionelle Dokumente erstellen")
+        col_pdf_f, col_pdf_v = st.columns([1, 2])
+        with col_pdf_f:
+            st.markdown("<div class='card'><h4>Dokumenten-Konfigurator</h4></div>", unsafe_allow_html=True)
+            if st.session_state.kunden.empty:
+                st.warning("Keine Kunden in der Kartei!")
+            else:
+                doc_kunde = st.selectbox("Wähle einen Kunden:", st.session_state.kunden["Kunden-Name"])
+                doc_art = st.selectbox("Behandlung:", list(st.session_state.zeiten_naegel.keys()))
+                doc_datum = st.date_input("Datum", datetime.date.today())
+                doc_preis = st.number_input("Beitrag in €", min_value=0.0, step=0.5)
+                doc_typ = st.radio("Dokumententyp:", ["Professionelle Quittung", "Einverständniserklärung"], horizontal=True)
+                
+                if st.button("Dokument generieren", use_container_width=True):
+                    logo_html = f"<img src='{LOGO_URL}' style='max-height: 60px; float: right; border-radius: 50%;' onerror='this.style.display=\"none\"'>"
+                    if doc_typ == "Professionelle Quittung":
+                        st.session_state.pdf_view = f"""
+                            <div class='pdf-frame'>
+                                {logo_html}
+                                <h1 style='color: #721c24; margin:0;'>Redline Studio</h1>
+                                <hr>
+                                <h2 style='text-align: center;'>QUITTUNG / RECHNUNG</h2>
+                                <p><strong>Datum:</strong> {doc_datum.strftime('%d.%m.%Y')}</p>
+                                <p><strong>Kunde:</strong> {doc_kunde}</p>
+                                <p><strong>Leistung:</strong> {doc_art}</p>
+                                <h3 style='text-align: right; border-top: 2px solid #333; padding-top:10px;'>Gesamtbetrag erhalten: {doc_preis:.2f} €</h3>
+                                <p style='font-style: italic; font-size: 0.9em; margin-top:30px;'>Vielen Dank für deinen Besuch!<br>Es gilt die Kleinunternehmerregelung (§ 19 UStG).</p>
+                            </div>
+                        """
+                    else:
+                        st.session_state.pdf_view = f"""
+                            <div class='pdf-frame'>
+                                {logo_html}
+                                <h1 style='color: #721c24; margin:0;'>Redline Studio</h1>
+                                <hr>
+                                <h2 style='text-align: center;'>Einverständniserklärung & Protokoll</h2>
+                                <p><strong>Datum:</strong> {doc_datum.strftime('%d.%m.%Y')}</p>
+                                <p><strong>Kunde:</strong> {doc_kunde}</p>
+                                <p><strong>Behandlung:</strong> {doc_art}</p>
+                                <p style='margin-top:20px;'>Ich wurde über die Behandlung, Risiken und die Nachpflege aufgeklärt und stimme zu.</p>
+                                <br><br>
+                                <div style='display: flex; justify-content: space-between; margin-top:40px;'>
+                                    <div>_____________________<br><span style='font-size: 0.8em;'>Unterschrift Kunde</span></div>
+                                    <div>_____________________<br><span style='font-size: 0.8em;'>Unterschrift Studio</span></div>
+                                </div>
+                            </div>
+                        """
+                    st.rerun()
+        with col_pdf_v:
+            if 'pdf_view' in st.session_state:
+                st.markdown(st.session_state.pdf_view, unsafe_allow_html=True)
+
+    # TAB 5: FINANZEN
+    with menue[4]:
+        st.subheader("📊 Finanzen")
+        col_f1, col_f2 = st.columns([1, 2])
+        with col_f1:
+            f_datum = st.date_input("Datum", datetime.date.today(), key="fin_d")
+            f_typ = st.selectbox("Typ", ["Einnahme", "Ausgabe"])
+            f_kat = st.text_input("Kategorie")
+            f_betrag = st.number_input("Betrag in €", min_value=0.0)
+            if st.button("Eintrag Speichern"):
+                neuer_eintrag = pd.DataFrame([[f_datum, f_typ, f_kat, f_betrag]], columns=["Datum", "Typ", "Kategorie", "Betrag (€)"])
+                st.session_state.finanzen = pd.concat([st.session_state.finanzen, neuer_eintrag], ignore_index=True)
+                st.rerun()
+        with col_f2:
+            st.dataframe(st.session_state.finanzen, use_container_width=True)
+
+# --- SEITE: KUNDEN-BUCHUNG ---
+else:
+    show_logo_and_header()
+    with st.sidebar:
+        st.write(f"Willkommen, **{st.session_state.user}**!")
+        if st.button("Abmelden"):
+            st.session_state.user = None
+            st.rerun()
+            
+    st.subheader("🗓️ Wähle deinen Wunschtermin")
+    nagel_wunsch = st.selectbox("Was möchtest du machen lassen?", list(st.session_state.zeiten_naegel.keys()))
+    benoetigte_zeit = st.session_state.zeiten_naegel[nagel_wunsch]
+    gesamte_blockade_zeit = benoetigte_zeit + st.session_state.puffer_zeit
+    
+    st.info(f"Für {nagel_wunsch} werden {benoetigte_zeit} Minuten eingeplant.")
+    
+    freie_anzeige = st.session_state.freie_slots[st.session_state.freie_slots["Status"] == "Frei"]
+    if freie_anzeige.empty:
+        st.warning("Aktuell sind leider keine freien Termine freigeschaltet.")
+    else:
+        for idx, row in freie_anzeige.iterrows():
+            verfuegbare_minuten = int(row["Dauer_Minuten"])
+            if verfuegbare_minuten >= gesamte_blockade_zeit:
+                col_slot, col_buch_btn = st.columns([3, 1])
+                col_slot.write(f"📅 **{row['Datum']}** | ⏰ Von {row['Startzeit']} bis {row['Endzeit']} Uhr")
+                if col_buch_btn.button("Jetzt buchen", key=f"book_{idx}"):
+                    st.session_state.freie_slots.at[idx, "Status"] = "Gebucht"
+                    kunden_farbe = "#721c24"
+                    if not st.session_state.kunden.empty:
+                        treffer = st.session_state.kunden[st.session_state.kunden["Kunden-Name"] == st.session_state.user]
+                        if not treffer.empty: kunden_farbe = treffer.iloc[0]["Farbe"]
+                    
+                    neuer_termin = pd.DataFrame([[row['Datum'], row['Startzeit'], st.session_state.user, nagel_wunsch, gesamte_blockade_zeit, kunden_farbe]], 
+                                                columns=["Datum", "Uhrzeit", "Kunde", "Typ", "Dauer_Gesamt", "Farbe"])
+                    st.session_state.termine = pd.concat([st.session_state.termine, neuer_termin], ignore_index=True)
+                    st.success("Erfolgreich gebucht! 🎉")
+                    st.rerun()
