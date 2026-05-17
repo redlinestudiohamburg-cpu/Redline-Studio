@@ -59,9 +59,8 @@ if st.session_state.user is None:
     col1, col2, col3 = st.columns([1, 2, 1])
     with col2:
         name_eingabe = st.text_input("Dein vollständiger Name *", placeholder="Hier eintippen...")
-         st.button("Anmelden & Weiter zur Buchung", use_container_width=True)
-            if name_eingabe.strip() == "":
-                st.error("Bitte gib einen Namen ein.")
+            st.button("Anmelden & Weiter zur Buchung", use_container_width=True)
+
             elif name_eingabe.strip() == "admin123":
                 st.session_state.user = "Admin"
                 st.rerun()
