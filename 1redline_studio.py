@@ -51,24 +51,37 @@ st.markdown("""
         color: #721c24 !important;
         transform: scale(1.02);
     }
+    .card {
+        background-color: #f8f9fa;
+        padding: 20px;
+        border-radius: 8px;
+        border-left: 5px solid #721c24;
+        margin-bottom: 20px;
+    }
     </style>
 """, unsafe_allow_html=True)
 
-# --- INITIALISIERUNG DES SPEICHERS ---
+# --- INITIALISIERUNG DER DATEN-SPEICHER ---
 if 'user' not in st.session_state:
     st.session_state.user = None
+
+# Daten für Finanzen und Kunden vorbereiten, falls noch keine da sind
+if 'finanzen' not in st.session_state:
+    st.session_state.finanzen = pd.DataFrame(columns=["Datum", "Typ", "Kategorie", "Betrag (€)"])
+if 'kunden' not in st.session_state:
+    st.session_state.kunden = pd.DataFrame(columns=["Kunden-Name", "Telefonnummer", "Notizen"])
 
 # --- STARTSEITE: KUNDEN-LOGIN ---
 if st.session_state.user is None:
     st.markdown("<div class='main-header'><h1>Redline Studio</h1><p>Kreativität & Eleganz</p></div>", unsafe_allow_html=True)
     st.markdown("<h2 style='text-align: center;'>Willkommen im Redline Studio</h2>", unsafe_allow_html=True)
-    st.markdown("<p style='text-align: center; font-style: italic;'>Schön, dass du da bist! Bitte gib deinen Namen ein, um deinen Wunschtermin zu buchen.</p>", unsafe_allow_html=True)
+    st.markdown("<p style='text-align: center; font-style: italic;'>Bitte gib deinen Namen ein, um fortzufahren.</p>", unsafe_allow_html=True)
     
     col1, col2, col3 = st.columns([1, 2, 1])
     with col2:
         name_eingabe = st.text_input("Dein vollständiger Name *", placeholder="Hier eintippen...")
         
-        if st.button("Anmelden & Weiter zur Buchung", use_container_width=True):
+        if st.button("Anmelden & Weiter", use_container_width=True):
             if name_eingabe.strip() == "":
                 st.error("Bitte gib einen Namen ein.")
             elif name_eingabe.strip().lower() == "admin123":
@@ -89,13 +102,82 @@ elif st.session_state.user == "Admin":
             st.rerun()
             
     st.success("Erfolgreich als Admin angemeldet!")
-    st.subheader("📊 Deine Studio-Übersicht")
     
-    col1, col2 = st.columns(2)
-    with col1:
-        st.info("📂 Einnahmen- & Ausgabenrechner (In Kürze)")
-    with col2:
-        st.info("👥 Kundenkartei & Termine (In Kürze)")
+    # Navigation im Dashboard
+    menue = st.tabs(["📊 Einnahmen- & Ausgabenrechner", "👥 Kundenkartei & Kontakte"])
+    
+    # TAB 1: FINANZEN
+    with menue[0]:
+        st.subheader("📊 Finanzen verwalten")
+        
+        col_form, col_view = st.columns([1, 2])
+        
+        with col_form:
+            st.markdown("<div class='card'><h4>Neuen Eintrag hinzufügen</h4></div>", unsafe_allow_html=True)
+            f_datum = st.date_input("Datum", datetime.date.today())
+            f_typ = st.selectbox("Typ", ["Einnahme", "Ausgabe"])
+            f_kat = st.text_input("Kategorie (z.B. Miete, Material, Maniküre)", placeholder="z.B. Nägel machen")
+            f_betrag = st.number_input("Betrag in €", min_value=0.0, step=0.50)
+            
+            if st.button("Eintrag speichern", use_container_width=True):
+                if f_kat == "":
+                    st.error("Bitte gib eine Kategorie an.")
+                else:
+                    neuer_eintrag = pd.DataFrame([[f_datum, f_typ, f_kat, f_betrag]], columns=["Datum", "Typ", "Kategorie", "Betrag (€)"])
+                    st.session_state.finanzen = pd.concat([st.session_state.finanzen, neuer_eintrag], ignore_index=True)
+                    st.success("Finanzdaten aktualisiert!")
+                    st.rerun()
+        
+        with col_view:
+            st.markdown("<div class='card'><h4>Übersicht & Statistik</h4></div>", unsafe_allow_html=True)
+            
+            # Berechnungen
+            einnahmen = st.session_state.finanzen[st.session_state.finanzen["Typ"] == "Einnahme"]["Betrag (€)"].sum()
+            ausgaben = st.session_state.finanzen[st.session_state.finanzen["Typ"] == "Ausgabe"]["Betrag (€)"].sum()
+            gewinn = einnahmen - ausgaben
+            
+            col_e, col_a, col_g = st.columns(3)
+            col_e.metric("Gesamteinnahmen", f"{einnahmen:.2f} €")
+            col_a.metric("Gesamtausgaben", f"{ausgaben:.2f} €")
+            col_g.metric("Reingewinn", f"{gewinn:.2f} €")
+            
+            st.write("---")
+            st.dataframe(st.session_state.finanzen, use_container_width=True)
+            
+            if st.button("Alle Finanzdaten löschen", help="Setzt die Tabelle zurück"):
+                st.session_state.finanzen = pd.DataFrame(columns=["Datum", "Typ", "Kategorie", "Betrag (€)"])
+                st.rerun()
+
+    # TAB 2: KUNDENKARTEI
+    with menue[1]:
+        st.subheader("👥 Digitale Kundenkartei")
+        
+        col_k_form, col_k_view = st.columns([1, 2])
+        
+        with col_k_form:
+            st.markdown("<div class='card'><h4>Neuen Kunden anlegen</h4></div>", unsafe_allow_html=True)
+            k_name = st.text_input("Kunden-Name", placeholder="Vor- und Nachname")
+            k_tel = st.text_input("Telefonnummer", placeholder="z.B. 0176...")
+            k_notiz = st.text_area("Besondere Notizen (Allergien, Wünsche)", placeholder="z.B. Schablone Verlängerung...")
+            
+            if st.button("Kunde abspeichern", use_container_width=True):
+                if k_name == "":
+                    st.error("Bitte einen Namen eintragen.")
+                else:
+                    neuer_kunde = pd.DataFrame([[k_name, k_tel, k_notiz]], columns=["Kunden-Name", "Telefonnummer", "Notizen"])
+                    st.session_state.kunden = pd.concat([st.session_state.kunden, neuer_kunde], ignore_index=True)
+                    st.success(f"{k_name} wurde registriert!")
+                    st.rerun()
+                    
+        with col_k_view:
+            st.markdown("<div class='card'><h4>Gespeicherte Kunden</h4></div>", unsafe_allow_html=True)
+            suche = st.text_input("🔍 Kunden suchen...", placeholder="Name eingeben zum Filtern")
+            
+            if suche:
+                gefilterte_kunden = st.session_state.kunden[st.session_state.kunden["Kunden-Name"].str.contains(suche, case=False, na=False)]
+                st.dataframe(gefilterte_kunden, use_container_width=True)
+            else:
+                st.dataframe(st.session_state.kunden, use_container_width=True)
 
 # --- BEREICH: NORMALE KUNDEN-BUCHUNG ---
 else:
