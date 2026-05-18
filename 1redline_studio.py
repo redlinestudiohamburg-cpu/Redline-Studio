@@ -26,7 +26,7 @@ if 'studio_news' not in st.session_state:
 if 'news_aktiv' not in st.session_state:
     st.session_state.news_aktiv = True
 
-# 🗃️ ERWEITERTES DYNAMISCHES LAGER (Mit Einkaufspreis pro Einheit für die genaue Quittung)
+# 🗃️ ERWEITERTES DYNAMISCHES LAGER
 if 'lager_bestand' not in st.session_state:
     st.session_state.lager_bestand = {
         "Nagelfeilen": {"aktuell": 20.0, "limit": 5.0, "einheit": "Stk.", "auto_abzug": True, "verbrauch_pro_kunde": 1.0, "kosten_pro_einheit": 1.20},
@@ -180,8 +180,8 @@ st.markdown("""
         border-radius: 8px;
         border: 1px solid #e0e0e0;
         text-align: center;
+        margin-bottom: 10px;
     }
-    /* 📜 Kompakter Scroll-Container für unendlich viele Kundeninformationen */
     .scroll-container {
         max-height: 380px;
         overflow-y: auto;
@@ -229,34 +229,52 @@ def show_logo_and_header():
     if st.session_state.news_aktiv and st.session_state.studio_news:
         st.markdown(f"<div class='news-banner'>📢 {st.session_state.studio_news}</div>", unsafe_allow_html=True)
 
-# --- STARTSEITE: KUNDEN-LOGIN ---
+# --- STARTSEITE: KUNDEN- & ADMIN-LOGIN ---
 if st.session_state.user is None:
     show_logo_and_header()
     st.markdown("<h2 style='text-align: center;'>Willkommen im Redline Studio</h2>", unsafe_allow_html=True)
     
     col1, col2, col3 = st.columns([1, 2, 1])
     with col2:
-        name_eingabe = st.text_input("Dein vollständiger Name *", placeholder="Hier eintippen...")
-        if st.button("Anmelden & Weiter zur Buchung", use_container_width=True):
-            if name_eingabe.strip() == "":
-                st.error("Bitte gib einen Namen ein.")
-            elif name_eingabe.strip().lower() == "admin123":
-                st.session_state.user = "Admin"
-                st.rerun()
-            else:
-                st.session_state.user = name_eingabe.strip()
-                if st.session_state.user not in st.session_state.kunden_liste:
-                    st.session_state.kunden_liste[st.session_state.user] = {
-                        "Telefon": "", "Farbe": "#721c24", "Kaffee": "Noch unbekannt", "Allergien": "Keine", "Notizen": "",
-                        "Anamnese_Text": "", "DSGVO_Akzeptiert": False, "Fotos": [], "Ist_Neukunde": True
-                    }
-                st.rerun()
+        with st.form(key="login_form", clear_on_submit=False):
+            st.markdown("##### 🔑 Login-Bereich")
+            
+            passwort_verbergen = st.checkbox("🔒 Sicherheits-Modus (Schrift zu Punkten machen)")
+            input_type = "password" if passwort_verbergen else "default"
+            
+            name_eingabe = st.text_input(
+                "Dein Name (Kunden) ODER Admin-Passwort (Studioleitung) *", 
+                placeholder="Hier eintippen und Enter drücken...",
+                type=input_type
+            )
+            
+            submit_login = st.form_submit_button("Anmelden & Weiter", use_container_width=True)
+            
+            if submit_login:
+                bereinigte_eingabe = name_eingabe.strip()
+                
+                if bereinigte_eingabe == "Alocasia":
+                    st.session_state.user = "Admin"
+                    st.rerun()
+                elif bereinigte_eingabe.lower() == "admin123":
+                    st.error("❌ Das alte Passwort 'admin123' ist nicht mehr gültig! Bitte benutze das neue Passwort.")
+                elif passwort_verbergen and len(bereinigte_eingabe) > 0 and bereinigte_eingabe != "Alocasia":
+                    st.error("⚠️ Du hast den Sicherheits-Modus für das Admin-Passwort aktiviert! Wenn du eine Kundin bist, schalte bitte diesen Haken aus, damit du deinen Namen unverschlüsselt eingeben kannst.")
+                elif bereinigte_eingabe == "":
+                    st.error("Bitte gib einen Namen oder ein gültiges Passwort ein.")
+                else:
+                    st.session_state.user = bereinigte_eingabe
+                    if st.session_state.user not in st.session_state.kunden_liste:
+                        st.session_state.kunden_liste[st.session_state.user] = {
+                            "Telefon": "", "Farbe": "#721c24", "Kaffee": "Noch unbekannt", "Allergien": "Keine", "Notizen": "",
+                            "Anamnese_Text": "", "DSGVO_Akzeptiert": False, "Fotos": [], "Ist_Neukunde": True
+                        }
+                    st.rerun()
 
 # --- BEREICH: ADMIN-DASHBOARD ---
 elif st.session_state.user == "Admin":
     show_logo_and_header()
     
-    # Globaler intelligenter Material-Warner
     for produkt, daten in st.session_state.lager_bestand.items():
         if daten["aktuell"] <= daten["limit"]:
             st.markdown(f"""
@@ -265,7 +283,6 @@ elif st.session_state.user == "Admin":
                 </div>
             """, unsafe_allow_html=True)
     
-    # 💾 Optimierter, schlankerer linker Bereich (Sidebar) mit Rollbalken
     with st.sidebar:
         st.write(f"💼 Modus: **{st.session_state.user}**")
         st.write("---")
@@ -462,7 +479,7 @@ elif st.session_state.user == "Admin":
                 
             neu_lim = st.number_input("Warnen ab (Mindestlimit)", min_value=0.0, value=15.0)
             neu_menge = st.number_input(f"Verbrauch pro Kunde (ca. in {speicher_einheit})", min_value=0.0, value=1.5)
-            neu_cost = st.number_input("💰 Material-Kosten für eine Einheit (€):", min_value=0.0, value=0.50, step=0.05, help="Der Preis pro ml oder pro Stück für deinen Material-Einkauf.")
+            neu_cost = st.number_input("💰 Material-Kosten für eine Einheit (€):", min_value=0.0, value=0.50, step=0.05)
             
             if st.button("Produkt ins System aufnehmen"):
                 if neu_prod:
@@ -491,17 +508,16 @@ elif st.session_state.user == "Admin":
                     st.rerun()
                 st.write("---")
 
-    # TAB 5: MATERIAL-EINKAUF-FAVORITEN & WEBSEITEN-PREISVERGLEICH
+    # TAB 5: MATERIAL-EINKAUF-FAVORITEN & WEBSEITEN-PREISVERGLEICH (Mit Shein & AliExpress)
     with menue[4]:
         st.subheader("🛒 Material-Katalog mit Foto-Upload & Live-Preisvergleich")
         col_cat1, col_cat2 = st.columns([1, 2])
         
         with col_cat1:
             st.markdown("<div class='card'><h4>📸 Lieblingsmaterial hinzufügen</h4></div>", unsafe_allow_html=True)
-            mat_name = st.text_input("Name des Materials:", placeholder="z.B. Jolifin Farbgel Diamond Rose")
+            mat_name = st.text_input("Name des Materials:", placeholder="z.B. Farbgel Diamond Rose")
             mat_preis = st.number_input("Standard-Richtpreis (€):", min_value=0.0, value=9.95, step=0.5)
             mat_notiz = st.text_area("Besondere Notizen / Marke / Code:")
-            
             mat_foto = st.file_uploader("Produkt-Foto hochladen (Kamera/Galerie):", type=["jpg", "png", "jpeg"], key="mat_foto_upload")
             
             if st.button("Material im Katalog speichern", use_container_width=True):
@@ -534,19 +550,24 @@ elif st.session_state.user == "Admin":
                     
         st.write("---")
         st.markdown("### 🌐 Live-Einkaufs-Matrix & Webseiten-Preisvergleich")
-        w1, w2, w3, w4 = st.columns(4)
         
-        w1.markdown("<div class='vergleichs-box'><h4>🛍️ Jolifin</h4><a href='https://www.jolifin.de' target='_blank'>Shop öffnen</a>", unsafe_allow_html=True); w1.number_input("Warenkorb Preis (€):", key="p_s1"); w1.markdown("</div>", unsafe_allow_html=True)
-        w2.markdown("<div class='vergleichs-box'><h4>🛍️ NeoNail</h4><a href='https://www.neonail.de' target='_blank'>Shop öffnen</a>", unsafe_allow_html=True); w2.number_input("Warenkorb Preis (€):", key="p_s2"); w2.markdown("</div>", unsafe_allow_html=True)
-        w3.markdown("<div class='vergleichs-box'><h4>🛍️ LyniNails</h4><a href='https://www.lyni-nails.de' target='_blank'>Shop öffnen</a>", unsafe_allow_html=True); w3.number_input("Warenkorb Preis (€):", key="p_s3"); w3.markdown("</div>", unsafe_allow_html=True)
-        w4.markdown("<div class='vergleichs-box'><h4>🛍️ Amazon</h4><a href='https://www.amazon.de' target='_blank'>Shop öffnen</a>", unsafe_allow_html=True); w4.number_input("Warenkorb Preis (€):", key="p_s4"); w4.markdown("</div>", unsafe_allow_html=True)
+        cc1, cc2, cc3, cc4 = st.columns(4)
+        cc1.markdown("<div class='vergleichs-box'><h4>🛍️ Jolifin</h4><a href='https://www.jolifin.de' target='_blank'>Shop öffnen</a>", unsafe_allow_html=True); cc1.number_input("Preis (€):", key="p_s1"); cc1.markdown("</div>", unsafe_allow_html=True)
+        cc2.markdown("<div class='vergleichs-box'><h4>🛍️ NeoNail</h4><a href='https://www.neonail.de' target='_blank'>Shop öffnen</a>", unsafe_allow_html=True); cc2.number_input("Preis (€):", key="p_s2"); cc2.markdown("</div>", unsafe_allow_html=True)
+        cc3.markdown("<div class='vergleichs-box'><h4>🛍️ LyniNails</h4><a href='https://www.lyni-nails.de' target='_blank'>Shop öffnen</a>", unsafe_allow_html=True); cc3.number_input("Preis (€):", key="p_s3"); cc3.markdown("</div>", unsafe_allow_html=True)
+        cc4.markdown("<div class='vergleichs-box'><h4>🛍️ Amazon</h4><a href='https://www.amazon.de' target='_blank'>Shop öffnen</a>", unsafe_allow_html=True); cc4.number_input("Preis (€):", key="p_s4"); cc4.markdown("</div>", unsafe_allow_html=True)
+        
+        cc5, cc6, cc7, cc8 = st.columns(4)
+        cc5.markdown("<div class='vergleichs-box'><h4>🛍️ Shein</h4><a href='https://de.shein.com' target='_blank'>Shop öffnen</a>", unsafe_allow_html=True); cc5.number_input("Preis (€):", key="p_s5"); cc5.markdown("</div>", unsafe_allow_html=True)
+        cc6.markdown("<div class='vergleichs-box'><h4>🛍️ AliExpress</h4><a href='https://de.aliexpress.com' target='_blank'>Shop öffnen</a>", unsafe_allow_html=True); cc6.number_input("Preis (€):", key="p_s6"); cc6.markdown("</div>", unsafe_allow_html=True)
+        cc7.write("") 
+        cc8.write("") 
 
-    # TAB 6: BEARBEITBARE RECHNUNGEN & QUITTUNGEN (Mit automatischer Materialanrechnung)
+    # TAB 6: BEARBEITBARE RECHNUNGEN & QUITTUNGEN
     with menue[5]:
         st.subheader("📄 Bearbeitbare Quittungen & Automatisierte Material-Anrechnung")
         col_pdf_f, col_pdf_v = st.columns([1, 2])
         
-        # Berechne die gesamten Materialkosten, die pro Behandlung verbraucht werden
         gesamte_studiomaterial_kosten = 0.0
         for p, d in st.session_state.lager_bestand.items():
             gesamte_studiomaterial_kosten += (d["verbrauch_pro_kunde"] * d.get("kosten_pro_einheit", 0.0))
@@ -670,7 +691,6 @@ elif st.session_state.user == "Admin":
 else:
     show_logo_and_header()
     
-    # Erkennt vollautomatisch, ob registrierter Stammkunde oder Neukunde
     ist_neukunde_erkannt = st.session_state.kunden_liste[st.session_state.user].get("Ist_Neukunde", True)
     
     with st.sidebar:
@@ -708,7 +728,6 @@ else:
                 if col_buch_btn.button("Jetzt buchen", key=f"book_{idx}"):
                     st.session_state.freie_slots.at[idx, "Status"] = "Gebucht"
                     
-                    # Automatischer Bestandsabzug im Verbrauchslager
                     for prod, daten in st.session_state.lager_bestand.items():
                         if daten["auto_abzug"] and daten["aktuell"] > 0:
                             st.session_state.lager_bestand[prod]["aktuell"] = max(0.0, daten["aktuell"] - daten["verbrauch_pro_kunde"])
@@ -718,7 +737,6 @@ else:
                                                 columns=["Datum", "Uhrzeit", "Kunde", "Typ", "Dauer_Gesamt", "Farbe", "Ist_Neukunde"])
                     st.session_state.termine = pd.concat([st.session_state.termine, neuer_termin], ignore_index=True)
                     
-                    # Nach der ersten erfolgreichen Buchung wird sie automatisch zur Stammkundin
                     st.session_state.kunden_liste[st.session_state.user]["Ist_Neukunde"] = False
                     
                     st.success("Erfolgreich gebucht! Wir freuen uns auf dich! 🎉")
