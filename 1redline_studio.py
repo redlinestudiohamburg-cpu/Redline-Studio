@@ -10,7 +10,7 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# LOGO-LINK
+# 🌐 DEIN REINER, QUADRATISCHER LOGO-DIREKTLINK:
 LOGO_URL = "https://i.ibb.co/6w2fR6V/1000083367.jpg"
 
 # --- INITIALISIERUNG DER DATEN-SPEICHER ---
@@ -19,24 +19,24 @@ if 'zeiten_naegel' not in st.session_state:
     st.session_state.zeiten_naegel = {"Neumodellage": 120, "Auffüllen": 90, "French / Extra Design": 45}
 if 'puffer_zeit' not in st.session_state: st.session_state.puffer_zeit = 20
 
-# Schwarzes Brett
+# 📢 NEU: Speicher für das Schwarze Brett (Studio-News)
 if 'studio_news' not in st.session_state:
     st.session_state.studio_news = "✨ Willkommen im Redline Studio! Ab sofort über 20 neue Chrome-Pigmente verfügbar! ✨"
 if 'news_aktiv' not in st.session_state:
     st.session_state.news_aktiv = True
 
-# Material-Warner
+# 🗃️ NEU: Speicher für den intelligenten Material-Warner
 if 'feilen_bestand' not in st.session_state:
-    st.session_state.feilen_bestand = 20  
+    st.session_state.feilen_bestand = 20  # Startwert: Eine Packung
 if 'feilen_warnlimit' not in st.session_state:
-    st.session_state.feilen_warnlimit = 5  
+    st.session_state.feilen_warnlimit = 5  # Standard-Warnung ab 5 Stück
 
-# Erweiterte Kundenstruktur mit Fokus auf Risiken
+# Erweiterte Kundenstruktur
 if 'kunden_liste' not in st.session_state:
     st.session_state.kunden_liste = {
         "Beispiel Kundin": {
             "Telefon": "+49 123 456789", "Farbe": "#721c24", 
-            "Kaffee": "Cappuccino mit Hafermilch", "Risiken": "Allergie gegen bestimmte Inhaltsstoffe", "Notizen": "Bevorzugt mattes Finish", "Fotos": []
+            "Kaffee": "Cappuccino mit Hafermilch", "Allergien": "Keine", "Notizen": "Bevorzugt mattes Finish", "Fotos": []
         }
     }
 
@@ -44,29 +44,125 @@ if 'freie_slots' not in st.session_state: st.session_state.freie_slots = pd.Data
 if 'termine' not in st.session_state: st.session_state.termine = pd.DataFrame(columns=["Datum", "Uhrzeit", "Kunde", "Typ", "Dauer_Gesamt", "Farbe"])
 if 'finanzen' not in st.session_state: st.session_state.finanzen = pd.DataFrame(columns=["Datum", "Typ", "Kategorie", "Betrag (€)"])
 
-# --- DESIGN & STYLE ---
+# --- DESIGN & STYLE (Weinrot & Gold Luxe Edition) ---
 st.markdown("""
     <style>
-    .stApp { background-color: #ffffff; color: #333333; }
-    .main-header {
-        background-color: #721c24; padding: 25px; border-radius: 15px; text-align: center;
-        margin-bottom: 20px; box-shadow: 0 6px 12px rgba(0,0,0,0.15);
-        display: flex; align-items: center; justify-content: center; gap: 25px;
+    .stApp {
+        background-color: #ffffff;
+        color: #333333;
     }
-    .main-header h1 { color: #d4af37 !important; font-family: 'Playfair Display', serif; font-size: 3.2rem; margin: 0; }
-    .main-header p { color: #f8f9fa; font-size: 1.3rem; font-style: italic; margin-top: 5px; }
-    .main-logo-img { max-height: 100px; border-radius: 12px; border: 2px solid #d4af37; }
-    .news-banner { background-color: #721c24; color: #d4af37; border: 2px solid #d4af37; padding: 15px; border-radius: 10px; text-align: center; font-size: 1.2rem; font-weight: bold; margin-bottom: 25px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
-    .material-alert { background-color: #fff3cd; color: #856404; border: 2px solid #ffeeba; padding: 15px; border-radius: 8px; font-weight: bold; margin-bottom: 20px; }
-    .risiko-alert { background-color: #f8d7da; color: #721c24; border: 2px solid #f5c6cb; padding: 15px; border-radius: 8px; font-weight: bold; margin-bottom: 20px; font-size: 1.1rem; }
-    .stButton>button { background-color: #721c24 !important; color: #d4af37 !important; border: 2px solid #d4af37 !important; border-radius: 8px !important; font-weight: bold !important; transition: all 0.3s ease; }
-    .stButton>button:hover { background-color: #d4af37 !important; color: #721c24 !important; transform: scale(1.02); }
-    .card { background-color: #f8f9fa; padding: 20px; border-radius: 8px; border-left: 5px solid #721c24; margin-bottom: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
-    .kunden-akte { background-color: #fffdf9; padding: 25px; border-radius: 12px; border: 1px solid #d4af37; margin-top: 15px; }
-    .stat-box { background-color: #721c24; color: white; padding: 15px; border-radius: 8px; text-align: center; border-bottom: 4px solid #d4af37; }
-    .holiday-text { color: #721c24; font-weight: bold; background-color: #f8d7da; padding: 8px; border-radius: 5px; display: block; margin-bottom: 15px; }
-    .calendar-box { border: 1px solid #721c24; padding: 12px; border-radius: 8px; margin-bottom: 8px; color: white; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
-    .pdf-frame { border: 2px solid #721c24; padding: 25px; background-color: white; color: black; font-family: 'Courier New', monospace; line-height: 1.4; box-shadow: 0 4px 8px rgba(0,0,0,0.1); }
+    .main-header {
+        background-color: #721c24;
+        padding: 25px;
+        border-radius: 15px;
+        text-align: center;
+        margin-bottom: 20px;
+        box-shadow: 0 6px 12px rgba(0,0,0,0.15);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 25px;
+    }
+    .main-header h1 {
+        color: #d4af37 !important;
+        font-family: 'Playfair Display', serif;
+        font-size: 3.2rem;
+        margin: 0;
+    }
+    .main-header p {
+        color: #f8f9fa;
+        font-size: 1.3rem;
+        font-style: italic;
+        margin-top: 5px;
+    }
+    .main-logo-img {
+        max-height: 100px;
+        border-radius: 12px;
+        border: 2px solid #d4af37;
+    }
+    .news-banner {
+        background-color: #721c24;
+        color: #d4af37;
+        border: 2px solid #d4af37;
+        padding: 15px;
+        border-radius: 10px;
+        text-align: center;
+        font-size: 1.2rem;
+        font-weight: bold;
+        margin-bottom: 25px;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    }
+    .material-alert {
+        background-color: #fff3cd;
+        color: #856404;
+        border: 2px solid #ffeeba;
+        padding: 15px;
+        border-radius: 8px;
+        font-weight: bold;
+        margin-bottom: 20px;
+    }
+    .stButton>button {
+        background-color: #721c24 !important;
+        color: #d4af37 !important;
+        border: 2px solid #d4af37 !important;
+        border-radius: 8px !important;
+        font-weight: bold !important;
+        transition: all 0.3s ease;
+    }
+    .stButton>button:hover {
+        background-color: #d4af37 !important;
+        color: #721c24 !important;
+        transform: scale(1.02);
+    }
+    .card {
+        background-color: #f8f9fa;
+        padding: 20px;
+        border-radius: 8px;
+        border-left: 5px solid #721c24;
+        margin-bottom: 20px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    }
+    .kunden-akte {
+        background-color: #fffdf9;
+        padding: 25px;
+        border-radius: 12px;
+        border: 1px solid #d4af37;
+        margin-top: 15px;
+    }
+    .stat-box {
+        background-color: #721c24;
+        color: white;
+        padding: 15px;
+        border-radius: 8px;
+        text-align: center;
+        border-bottom: 4px solid #d4af37;
+    }
+    .holiday-text {
+        color: #721c24;
+        font-weight: bold;
+        background-color: #f8d7da;
+        padding: 8px;
+        border-radius: 5px;
+        display: block;
+        margin-bottom: 15px;
+    }
+    .calendar-box {
+        border: 1px solid #721c24;
+        padding: 12px;
+        border-radius: 8px;
+        margin-bottom: 8px;
+        color: white;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    .pdf-frame {
+        border: 2px solid #721c24;
+        padding: 25px;
+        background-color: white;
+        color: black;
+        font-family: 'Courier New', monospace;
+        line-height: 1.4;
+        box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    }
     </style>
 """, unsafe_allow_html=True)
 
@@ -93,6 +189,7 @@ def get_feiertag(datum):
     if (datum.day, datum.month) in feste: return feste[(datum.day, datum.month)]
     return None
 
+# --- FUNKTION: DYNAMISCHER HEADER MIT LOGO ---
 def show_logo_and_header():
     st.markdown(f"""
         <div class='main-header'>
@@ -104,6 +201,7 @@ def show_logo_and_header():
         </div>
     """, unsafe_allow_html=True)
     
+    # 📢 Zeigt das Schwarze Brett an, wenn es vom Admin aktiviert wurde
     if st.session_state.news_aktiv and st.session_state.studio_news:
         st.markdown(f"<div class='news-banner'>📢 {st.session_state.studio_news}</div>", unsafe_allow_html=True)
 
@@ -125,7 +223,7 @@ if st.session_state.user is None:
                 st.session_state.user = name_eingabe.strip()
                 if st.session_state.user not in st.session_state.kunden_liste:
                     st.session_state.kunden_liste[st.session_state.user] = {
-                        "Telefon": "", "Farbe": "#721c24", "Kaffee": "Noch unbekannt", "Risiken": "Keine", "Notizen": "", "Fotos": []
+                        "Telefon": "", "Farbe": "#721c24", "Kaffee": "Noch unbekannt", "Allergien": "Keine", "Notizen": "", "Fotos": []
                     }
                 st.rerun()
 
@@ -133,6 +231,7 @@ if st.session_state.user is None:
 elif st.session_state.user == "Admin":
     show_logo_and_header()
     
+    # ⚠️ LIVE-MATERIAL-WARNUNG DIREKT OBEN ANZEIGEN
     if st.session_state.feilen_bestand <= st.session_state.feilen_warnlimit:
         st.markdown(f"""
             <div class='material-alert'>
@@ -147,6 +246,8 @@ elif st.session_state.user == "Admin":
         heute_str = datetime.date.today().strftime('%Y-%m-%d')
         termine_heute = len(st.session_state.termine[st.session_state.termine["Datum"] == heute_str]) if not st.session_state.termine.empty else 0
         st.metric(label="Termine heute", value=termine_heute)
+        
+        # Schnellanzeige für Feilen in der Sidebar
         st.metric(label="Feilen übrig", value=f"{st.session_state.feilen_bestand} Stk.")
         
         if st.button("Abmelden", use_container_width=True):
@@ -217,7 +318,7 @@ elif st.session_state.user == "Admin":
                     txt_msg = f"Hallo {t['Kunde']}, ich freue mich auf unseren Nagel-Termin am {t['Datum']} um {t['Uhrzeit']} Uhr im Redline Studio! 💅"
                     st.text_area("📋 Fertiger WhatsApp-Text zum Kopieren:", value=txt_msg, height=70, key=f"wa_{t['Kunde']}_{t['Uhrzeit']}")
 
-    # TAB 2: DIGITALE LUXUS-KARTEI (Mit Risiko-Warnung)
+    # TAB 2: DIGITALE LUXUS-KARTEI
     with menue[1]:
         st.subheader("👥 Redline Premium Kundenkartei")
         col_k_liste, col_k_akte = st.columns([1, 2])
@@ -229,27 +330,17 @@ elif st.session_state.user == "Admin":
             n_name = st.text_input("Name der Kundin")
             if st.button("Kundin in Kartei aufnehmen", use_container_width=True):
                 if n_name and n_name not in st.session_state.kunden_liste:
-                    st.session_state.kunden_liste[n_name.strip()] = {"Telefon": "", "Farbe": "#721c24", "Kaffee": "", "Risiken": "Keine", "Notizen": "", "Fotos": []}
+                    st.session_state.kunden_liste[n_name.strip()] = {"Telefon": "", "Farbe": "#721c24", "Kaffee": "", "Allergien": "", "Notizen": "", "Fotos": []}
                     st.success("Kundin angelegt!")
                     st.rerun()
                     
         with col_k_akte:
             if ausgewaehlter_kunde:
                 akte = st.session_state.kunden_liste[ausgewaehlter_kunde]
-                
-                # WUNSCH-FUNKTION: Rote Warnung ganz oben, wenn Risiken eingetragen sind
-                if "Risiken" in akte and akte["Risiken"] != "" and akte["Risiken"].lower() != "keine":
-                    st.markdown(f"""
-                        <div class='risiko-alert'>
-                            ⚠️ ACHTUNG - WICHTIGE RISIKEN BEI {ausgewaehlter_kunde.upper()}:<br>
-                            {akte["Risiken"]}
-                        </div>
-                    """, unsafe_allow_html=True)
-                
                 st.markdown(f"<div class='kunden-akte'><h3>👑 VIP Akte: {ausgewaehlter_kunde}</h3>", unsafe_allow_html=True)
                 akte["Telefon"] = st.text_input("📞 Telefonnummer:", akte["Telefon"])
                 akte["Kaffee"] = st.text_input("☕ Kaffee- / Getränkevorliebe:", akte["Kaffee"])
-                akte["Risiken"] = st.text_input("⚠️ Bekannte Risiken / Besonderheiten:", akte["Risiken"])
+                akte["Allergien"] = st.text_input("⚠️ Allergien / Empfindlichkeiten:", akte["Allergien"])
                 akte["Notizen"] = st.text_area("📝 Besondere Design-Wünsche & Notizen:", akte["Notizen"])
                 akte["Farbe"] = st.color_picker("🎨 Eigene Kalender-Farbe für diese Kundin:", akte["Farbe"])
                 
@@ -268,9 +359,10 @@ elif st.session_state.user == "Admin":
                         cols_img[idx % 3].image(img, use_container_width=True, caption=f"Modellage {idx+1}")
                 st.markdown("</div>", unsafe_allow_html=True)
 
-    # TAB 3: SCHWARZES BRETT & INTELLIGENTES LAGER
+    # TAB 3: NEU -> SCHWARZES BRETT & INTELLIGENTES LAGER
     with menue[2]:
         st.subheader("📢 Studio-Management & Material-Warner")
+        
         col_board, col_lager = st.columns(2)
         
         with col_board:
@@ -284,7 +376,11 @@ elif st.session_state.user == "Admin":
         with col_lager:
             st.markdown("<div class='card'><h4>📦 Intelligenter Nagelfeilen-Warner</h4></div>", unsafe_allow_html=True)
             st.write("Das System zieht bei jeder erfolgreichen Kundenbuchung vollautomatisch 1 Feile ab.")
+            
+            # Einstellen des aktuellen Bestands
             st.session_state.feilen_bestand = st.number_input("Aktueller Feilenbestand im Studio (Stück):", min_value=0, value=st.session_state.feilen_bestand, step=1)
+            
+            # WUNSCH-LIMIT SELBST EINSTELLEN (Regler)
             st.session_state.feilen_warnlimit = st.slider("Ab wie vielen verbleibenden Feilen möchtest du gewarnt werden?", min_value=1, max_value=40, value=st.session_state.feilen_warnlimit)
             
             st.write("---")
@@ -414,6 +510,7 @@ else:
                 if col_buch_btn.button("Jetzt buchen", key=f"book_{idx}"):
                     st.session_state.freie_slots.at[idx, "Status"] = "Gebucht"
                     
+                    # 📉 FEILEN-BESTAND DIREKT BEI BUCHUNG REDUZIEREN
                     if st.session_state.feilen_bestand > 0:
                         st.session_state.feilen_bestand -= 1
                     
