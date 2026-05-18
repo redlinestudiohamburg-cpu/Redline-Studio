@@ -25,7 +25,7 @@ if 'studio_news' not in st.session_state:
 if 'news_aktiv' not in st.session_state:
     st.session_state.news_aktiv = True
 
-# 🗃️ ERWEITERTES DYNAMISCHES LAGER (Mit ml-Mengenverbrauch pro Kunde)
+# 🗃️ ERWEITERTES DYNAMISCHES LAGER (Mengen werden intern einheitlich in ml/Stk. verwaltet)
 if 'lager_bestand' not in st.session_state:
     st.session_state.lager_bestand = {
         "Nagelfeilen": {"aktuell": 20.0, "limit": 5.0, "einheit": "Stk.", "auto_abzug": True, "verbrauch_pro_kunde": 1.0},
@@ -34,7 +34,11 @@ if 'lager_bestand' not in st.session_state:
         "Cleaner": {"aktuell": 1000.0, "limit": 200.0, "einheit": "ml", "auto_abzug": True, "verbrauch_pro_kunde": 15.0}
     }
 
-# 📋 DATENSCHUTZ & ANAMNESE FORMULAR-VORLAGEN (Live editierbar)
+# 🛒 SPEICHER FÜR MATERIAL-KATALOG & PREISVERGLEICH
+if 'material_katalog' not in st.session_state:
+    st.session_state.material_katalog = []
+
+# 📋 DATENSCHUTZ & ANAMNESE FORMULAR-VORLAGEN
 if 'anamnese_vorlage' not in st.session_state:
     st.session_state.anamnese_vorlage = (
         "1. Haben Sie bekannte Allergien (z.B. gegen Acrylate, Gele, Klebstoffe)?\n"
@@ -50,7 +54,7 @@ if 'datenschutz_vorlage' not in st.session_state:
         "Die Daten werden vertraulich behandelt und niemals an Dritte weitergegeben."
     )
 
-# Premium Kundenstruktur (inklusive Anamnese- & DSGVO-Status)
+# Premium Kundenstruktur
 if 'kunden_liste' not in st.session_state:
     st.session_state.kunden_liste = {
         "Beispiel Kundin": {
@@ -65,7 +69,7 @@ if 'freie_slots' not in st.session_state:
 if 'termine' not in st.session_state: 
     st.session_state.termine = pd.DataFrame(columns=["Datum", "Uhrzeit", "Kunde", "Typ", "Dauer_Gesamt", "Farbe"])
 
-# FEHLERBEHEBUNG FINANZEN: Startet jetzt komplett sauber und leer bei 0,00 €!
+# FEHLERBEHEBUNG FINANZEN: Absolut sauberer Start bei 0,00 € ohne Geister-Einträge
 if 'finanzen' not in st.session_state: 
     st.session_state.finanzen = pd.DataFrame(columns=["Datum", "Typ", "Kategorie", "Betrag (€)"])
 
@@ -154,30 +158,12 @@ st.markdown("""
         border: 1px solid #d4af37;
         margin-top: 15px;
     }
-    .stat-box {
-        background-color: #721c24;
-        color: white;
-        padding: 15px;
-        border-radius: 8px;
-        text-align: center;
-        border-bottom: 4px solid #d4af37;
-    }
-    .holiday-text {
-        color: #721c24;
-        font-weight: bold;
-        background-color: #f8d7da;
-        padding: 8px;
-        border-radius: 5px;
-        display: block;
-        margin-bottom: 15px;
-    }
     .calendar-box {
         border: 1px solid #721c24;
         padding: 12px;
         border-radius: 8px;
         margin-bottom: 8px;
         color: white;
-        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
     }
     .pdf-frame {
         border: 2px solid #721c24;
@@ -185,8 +171,13 @@ st.markdown("""
         background-color: white;
         color: black;
         font-family: 'Courier New', monospace;
-        line-height: 1.4;
-        box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    }
+    .vergleichs-box {
+        background-color: #f8f9fa;
+        padding: 15px;
+        border-radius: 8px;
+        border: 1px solid #e0e0e0;
+        text-align: center;
     }
     </style>
 """, unsafe_allow_html=True)
@@ -208,13 +199,12 @@ def get_feiertag(datum):
     
     if datum == oster_datum - datetime.timedelta(days=2): return "Karfreitag"
     if datum == oster_datum: return "Ostersonntag"
-    if datum == oster_datum + datetime.timedelta(days=1): return "Ostermontag"
+    if datum == oster_datum + datetime.timedelta(days=1): return "Ostermonntag"
     if datum == oster_datum + datetime.timedelta(days=39): return "Auffahrt / Himmelfahrt"
     if datum == oster_datum + datetime.timedelta(days=50): return "Pfingstmontag"
     if (datum.day, datum.month) in feste: return feste[(datum.day, datum.month)]
     return None
 
-# --- FUNKTION: DYNAMISCHER HEADER MIT LOGO ---
 def show_logo_and_header():
     st.markdown(f"""
         <div class='main-header'>
@@ -225,7 +215,6 @@ def show_logo_and_header():
             </div>
         </div>
     """, unsafe_allow_html=True)
-    
     if st.session_state.news_aktiv and st.session_state.studio_news:
         st.markdown(f"<div class='news-banner'>📢 {st.session_state.studio_news}</div>", unsafe_allow_html=True)
 
@@ -256,12 +245,12 @@ if st.session_state.user is None:
 elif st.session_state.user == "Admin":
     show_logo_and_header()
     
-    # Globaler intelligenter Material-Warner (Prüft alle Produkte auf die Mindest-Limits)
+    # Globaler intelligenter Material-Warner
     for produkt, daten in st.session_state.lager_bestand.items():
         if daten["aktuell"] <= daten["limit"]:
             st.markdown(f"""
                 <div class='material-alert'>
-                    ⚠️ MATERIAL-WARNUNG: <strong>{produkt}</strong> neigt sich dem Ende! Vorrat: {daten['aktuell']} {daten['einheit']} (Warnung ab: {daten['limit']} {daten['einheit']}).
+                    ⚠️ MATERIAL-WARNUNG: <strong>{produkt}</strong> neigt sich dem Ende! Vorrat: {daten['aktuell']} {daten['einheit']} (Limit: ab {daten['limit']} {daten['einheit']}).
                 </div>
             """, unsafe_allow_html=True)
     
@@ -271,14 +260,21 @@ elif st.session_state.user == "Admin":
         heute_str = datetime.date.today().strftime('%Y-%m-%d')
         termine_heute = len(st.session_state.termine[st.session_state.termine["Datum"] == heute_str]) if not st.session_state.termine.empty else 0
         st.metric(label="Termine heute", value=termine_heute)
-        
         if st.button("Abmelden", use_container_width=True):
             st.session_state.user = None
             st.rerun()
             
-    menue = st.tabs(["🗓️ Kalender & Slots", "👥 Digitale Luxus-Kartei", "📝 Datenschutz & Anamnese-Editor", "📢 Schwarzes Brett & Lager", "📄 Dokumente & Quittungen", "📊 Finanzen & Bunte Diagramme"])
+    menue = st.tabs([
+        "🗓️ Kalender & Slots", 
+        "👥 Digitale Luxus-Kartei", 
+        "📝 Datenschutz & Anamnese-Editor", 
+        "📢 Schwarzes Brett & Lager", 
+        "🛒 Material-Einkauf & Vergleich", # DER NEUE REITER!
+        "📄 Dokumente & Quittungen", 
+        "📊 Finanzen & Bunte Diagramme"
+    ])
     
-    # TAB 1: KALENDER & ARBEITSZEITEN (Pufferzeit & Modellagezeiten jetzt hier!)
+    # TAB 1: KALENDER & ARBEITSZEITEN
     with menue[0]:
         st.subheader("🗓️ Arbeitszeiten & Kalenderübersicht")
         col_s1, col_s2 = st.columns([1, 2])
@@ -290,7 +286,6 @@ elif st.session_state.user == "Admin":
             st.write("---")
             st.markdown("<h4>Slot freigeben</h4>")
             slot_datum = st.date_input("Datum wählen", datetime.date.today(), key="admin_slot_d")
-            
             feiertag_name = get_feiertag(slot_datum)
             hinweis_text = "-"
             if feiertag_name:
@@ -312,7 +307,6 @@ elif st.session_state.user == "Admin":
                     st.rerun()
             
             st.write("---")
-            st.write("**Aktuelle Zeitslots (Datenbank):**")
             st.dataframe(st.session_state.freie_slots, use_container_width=True)
             if st.button("Alle Slots löschen / zurücksetzen"):
                 st.session_state.freie_slots = pd.DataFrame(columns=["Datum", "Startzeit", "Endzeit", "Dauer_Minuten", "Feiertag-Hinweis", "Status"])
@@ -323,7 +317,6 @@ elif st.session_state.user == "Admin":
             view_mode = st.radio("Ansichtsmodus:", ["Monat", "Tag"], horizontal=True)
             wahl_datum = st.date_input("Kalender-Fokus auf:", datetime.date.today(), key="cal_focus")
             
-            st.write("### Termine in der Übersicht:")
             if not st.session_state.termine.empty:
                 st.session_state.termine["Datum_Parsed"] = pd.to_datetime(st.session_state.termine["Datum"]).dt.date
                 if view_mode == "Tag":
@@ -345,8 +338,6 @@ elif st.session_state.user == "Admin":
                             💅 Behandlung: {t['Typ']} ({t['Dauer_Gesamt']} Min. inkl. Puffer)
                         </div>
                     """, unsafe_allow_html=True)
-                    txt_msg = f"Hallo {t['Kunde']}, ich freue mich auf unseren Nagel-Termin am {t['Datum']} um {t['Uhrzeit']} Uhr im Redline Studio! 💅"
-                    st.text_area("📋 Fertiger WhatsApp-Text zum Kopieren:", value=txt_msg, height=70, key=f"wa_{t['Kunde']}_{t['Uhrzeit']}")
 
     # TAB 2: DIGITALE LUXUS-KARTEI
     with menue[1]:
@@ -377,10 +368,8 @@ elif st.session_state.user == "Admin":
                 akte["Notizen"] = st.text_area("📝 Besondere Design-Wünsche & Notizen:", akte["Notizen"], key=f"not_{ausgewaehlter_kunde}")
                 
                 st.write("---")
-                st.write("**📝 Datenschutz & Medizinische Anamnese für diese Kundin:**")
                 akte["Anamnese_Text"] = st.text_area("Medizinischer Befund / Anamnese Notiz:", akte["Anamnese_Text"], key=f"anam_k_{ausgewaehlter_kunde}")
                 akte["DSGVO_Akzeptiert"] = st.checkbox("Datenschutzerklärung (DSGVO) liegt unterschrieben vor", value=akte["DSGVO_Akzeptiert"], key=f"dsgvo_k_{ausgewaehlter_kunde}")
-                
                 akte["Farbe"] = st.color_picker("🎨 Eigene Kalender-Farbe für diese Kundin:", akte["Farbe"], key=f"col_{ausgewaehlter_kunde}")
                 
                 st.write("---")
@@ -398,11 +387,9 @@ elif st.session_state.user == "Admin":
                         cols_img[idx % 3].image(img, use_container_width=True, caption=f"Modellage {idx+1}")
                 st.markdown("</div>", unsafe_allow_html=True)
 
-    # TAB 3: DATENSCHUTZ- & ANAMNESE-VORLAGEN-EDITOR (Der brandneue Tab!)
+    # TAB 3: DATENSCHUTZ- & ANAMNESE-VORLAGEN-EDITOR
     with menue[2]:
         st.subheader("📝 Zentrale Formular-Verwaltung")
-        st.write("Hier kannst du die Studio-Vorlagen für deine Kundinnen jederzeit bearbeiten und aktualisieren.")
-        
         col_form1, col_form2 = st.columns(2)
         with col_form1:
             st.markdown("<div class='card'><h4>📋 Medizinischer Anamnesebogen (Vorlage)</h4></div>", unsafe_allow_html=True)
@@ -416,7 +403,7 @@ elif st.session_state.user == "Admin":
             st.session_state.datenschutz_vorlage = neue_dsgvo_v
             st.success("Die Dokumenten-Vorlagen wurden erfolgreich live aktualisiert!")
 
-    # TAB 4: SCHWARZES BRETT & INTELLIGENTES LAGER (Mit variablem ml-Abzug)
+    # TAB 4: SCHWARZES BRETT & INTELLIGENTES LAGER (Mit flexibler Liter/ml Wahl!)
     with menue[3]:
         st.subheader("📢 Studio-Management & Flexibles Verbrauchslager")
         col_board, col_lager = st.columns([1, 1])
@@ -430,37 +417,130 @@ elif st.session_state.user == "Admin":
                 st.rerun()
                 
             st.write("---")
-            st.markdown("<h4>➕ Neues Produkt / Flüssigkeit ins Lager aufnehmen</h4>")
-            neu_prod = st.text_input("Produktname", placeholder="z.B. Farbgel Rot")
-            neu_ist = st.number_input("Aktueller Bestand", min_value=0.0, value=100.0)
-            neu_einheit = St_einheit = st.selectbox("Einheit:", ["ml", "Stk.", "Gramm", "Liter"])
+            st.markdown("<h4>➕ Neues Produkt ins Lager aufnehmen</h4>")
+            neu_prod = st.text_input("Produktname", placeholder="z.B. Cleaner Premium")
+            
+            # 🌟 NEU: Einzelne Wahl zwischen Liter und ml bei der Lageraufnahme!
+            c_menge, c_einheit = st.columns([2, 1])
+            eingabe_menge = c_menge.number_input("Menge/Inhalt:", min_value=0.0, value=1.0, step=0.5)
+            gewaehlte_einheit = c_einheit.selectbox("Einheit:", ["ml", "l (Liter)", "Stk."])
+            
+            # Automatische Umrechnung in Milliliter im Hintergrund, falls Liter gewählt wird
+            if "l (Liter)" in gewaehlte_einheit:
+                berechnete_menge = eingabe_menge * 1000.0
+                speicher_einheit = "ml"
+            else:
+                berechnete_menge = eingabe_menge
+                speicher_einheit = gewaehlte_einheit
+                
             neu_lim = st.number_input("Warnen ab (Mindestlimit)", min_value=0.0, value=15.0)
             neu_auto = st.checkbox("Soll automatisch bei Kundenbuchung verbraucht werden?", value=True)
-            neu_menge = st.number_input("Verbrauch pro Kunde (ca.)", min_value=0.0, value=1.5)
+            neu_menge = st.number_input(f"Verbrauch pro Kunde (ca. in {speicher_einheit})", min_value=0.0, value=1.5)
+            
             if st.button("Produkt ins System aufnehmen"):
                 if neu_prod:
-                    st.session_state.lager_bestand[neu_prod] = {"aktuell": neu_ist, "limit": neu_lim, "einheit": neu_einheit, "auto_abzug": neu_auto, "verbrauch_pro_kunde": neu_menge}
-                    st.success(f"{neu_prod} erfolgreich angelegt!")
+                    st.session_state.lager_bestand[neu_prod] = {
+                        "aktuell": berechnete_menge, "limit": neu_lim, "einheit": speicher_einheit, 
+                        "auto_abzug": neu_auto, "verbrauch_pro_kunde": neu_menge
+                    }
+                    st.success(f"'{neu_prod}' wurde erfolgreich mit {berechnete_menge} ml/Stk. registriert!")
                     st.rerun()
                 
         with col_lager:
             st.markdown("<div class='card'><h4>📦 Lagerbestände & Genaue Verbrauchswerte</h4></div>", unsafe_allow_html=True)
-            
             for prod, daten in list(st.session_state.lager_bestand.items()):
                 st.write(f"##### 🏷️ {prod} ({daten['einheit']})")
                 c1, c2, c3 = st.columns(3)
                 
-                st.session_state.lager_bestand[prod]["aktuell"] = c1.number_input(f"Ist-Vorrat##{prod}", min_value=0.0, value=float(daten["aktuell"]), step=1.0, key=f"ist_{prod}")
-                st.session_state.lager_bestand[prod]["limit"] = c2.number_input(f"Warn-Limit##{prod}", min_value=0.0, value=float(daten["limit"]), step=1.0, key=f"lim_{prod}")
-                st.session_state.lager_bestand[prod]["verbrauch_pro_kunde"] = c3.number_input(f"Verbrauch/Kunde ({daten['einheit']})##{prod}", min_value=0.0, value=float(daten["verbrauch_pro_kunde"]), step=0.1, key=f"vpr_{prod}")
+                st.session_state.lager_bestand[prod]["aktuell"] = c1.number_input(f"Ist-Vorrat##{prod}", min_value=0.0, value=float(daten["aktuell"]), key=f"ist_{prod}")
+                st.session_state.lager_bestand[prod]["limit"] = c2.number_input(f"Warn-Limit##{prod}", min_value=0.0, value=float(daten["limit"]), key=f"lim_{prod}")
+                st.session_state.lager_bestand[prod]["verbrauch_pro_kunde"] = c3.number_input(f"Verbrauch/Kunde##{prod}", min_value=0.0, value=float(daten["verbrauch_pro_kunde"]), key=f"vpr_{prod}")
                 
-                if c1.button(f"Große Packung aufstocken (+100 / +10)##{prod}"):
+                if c1.button(f"Aufstocken (+100 / +10)##{prod}"):
                     st.session_state.lager_bestand[prod]["aktuell"] += 100 if daten["einheit"] == "ml" else 10
                     st.rerun()
                 st.write("---")
 
-    # TAB 5: DOKUMENTE & QUITTUNGEN
+    # TAB 5: 🛒 MATERIAL-EINKAUF-FAVORITEN & WEBSEITEN-PREISVERGLEICH (Der brandneue Wunsch-Tab!)
     with menue[4]:
+        st.subheader("🛒 Material-Katalog mit Foto-Upload & Live-Preisvergleich")
+        
+        col_cat1, col_cat2 = st.columns([1, 2])
+        
+        with col_cat1:
+            st.markdown("<div class='card'><h4>📸 Lieblingsmaterial hinzufügen</h4></div>", unsafe_allow_html=True)
+            mat_name = st.text_input("Name des Materials:", placeholder="z.B. Jolifin Farbgel Diamond Rose")
+            mat_preis = st.number_input("Standard-Richtpreis (€):", min_value=0.0, value=9.95, step=0.5)
+            mat_notiz = st.text_area("Besondere Notizen / Marke / Code:")
+            
+            # Foto-Upload direkt über den Datei-Button wie bei den Modellagen!
+            mat_foto = st.file_uploader("Produkt-Foto hochladen:", type=["jpg", "png", "jpeg"], key="mat_foto_upload")
+            
+            if st.button("Material im Katalog speichern", use_container_width=True):
+                if mat_name:
+                    st.session_state.material_katalog.append({
+                        "Name": mat_name, "Preis": mat_preis, "Notiz": mat_notiz, "Foto": mat_foto
+                    })
+                    st.success(f"'{mat_name}' wurde in deinen Favoriten gespeichert!")
+                    st.rerun()
+                    
+        with col_cat2:
+            st.markdown("<div class='card'><h4>🔍 Deine Material-Favoriten</h4></div>", unsafe_allow_html=True)
+            if not st.session_state.material_katalog:
+                st.info("Dein Material-Katalog ist noch leer. Füge links Produkte hinzu!")
+            else:
+                for idx, item in enumerate(st.session_state.material_katalog):
+                    c_box1, c_box2 = st.columns([1, 3])
+                    with c_box1:
+                        if item["Foto"] is not None:
+                            st.image(item["Foto"], use_container_width=True)
+                        else:
+                            st.write("🧱 *Kein Bild*")
+                    with c_box2:
+                        st.write(f"##### **{item['Name']}**")
+                        st.write(f"💰 **Standardpreis:** {item['Preis']:.2f} € | *{item['Notiz']}*")
+                        if st.button(f"Löschen##{idx}", key=f"del_mat_{idx}"):
+                            st.session_state.material_katalog.pop(idx)
+                            st.rerun()
+                    st.write("---")
+                    
+        st.write("---")
+        st.markdown("### 🌐 Live-Einkaufs-Matrix & Webseiten-Preisvergleich")
+        st.write("Vergleiche hier zeitgleich bis zu 4 deiner gängigsten Shopping-Seiten für den Studioeinkauf:")
+        
+        # 4 Spalten für den direkten Vergleich nebeneinander
+        w1, w2, w3, w4 = st.columns(4)
+        
+        with w1:
+            st.markdown("<div class='vergleichs-box'><h4>🛍️ Shop 1: Jolifin</h4>", unsafe_allow_html=True)
+            st.markdown("[👉 Jolifin Shop öffnen](https://www.jolifin.de)")
+            st.number_input("Aktueller Warenkorb-Preis (€):", min_value=0.0, step=1.0, key="p_shop1")
+            st.text_area("Angebote / Rabattcodes:", placeholder="z.B. 10% mit CODE10", key="n_shop1")
+            st.markdown("</div>", unsafe_allow_html=True)
+            
+        with w2:
+            st.markdown("<div class='vergleichs-box'><h4>🛍️ Shop 2: NeoNail</h4>", unsafe_allow_html=True)
+            st.markdown("[👉 NeoNail Shop öffnen](https://www.neonail.de)")
+            st.number_input("Aktueller Warenkorb-Preis (€):", min_value=0.0, step=1.0, key="p_shop2")
+            st.text_area("Angebote / Rabattcodes:", placeholder="z.B. Gratis Versand", key="n_shop2")
+            st.markdown("</div>", unsafe_allow_html=True)
+            
+        with w3:
+            st.markdown("<div class='vergleichs-box'><h4>🛍️ Shop 3: LyniNails</h4>", unsafe_allow_html=True)
+            st.markdown("[👉 LyniNails Shop öffnen](https://www.lyni-nails.de)")
+            st.number_input("Aktueller Warenkorb-Preis (€):", min_value=0.0, step=1.0, key="p_shop3")
+            st.text_area("Angebote / Rabattcodes:", placeholder="Aktion beachten", key="n_shop3")
+            st.markdown("</div>", unsafe_allow_html=True)
+            
+        with w4:
+            st.markdown("<div class='vergleichs-box'><h4>🛍️ Shop 4: Amazon / Sonstige</h4>", unsafe_allow_html=True)
+            st.markdown("[👉 Alternativ-Shop öffnen](https://www.amazon.de)")
+            st.number_input("Aktueller Warenkorb-Preis (€):", min_value=0.0, step=1.0, key="p_shop4")
+            st.text_area("Angebote / Rabattcodes:", placeholder="Prime-Vorteile?", key="n_shop4")
+            st.markdown("</div>", unsafe_allow_html=True)
+
+    # TAB 6: DOKUMENTE & QUITTUNGEN
+    with menue[5]:
         st.subheader("📄 Professionelle Dokumente erstellen")
         col_pdf_f, col_pdf_v = st.columns([1, 2])
         with col_pdf_f:
@@ -509,11 +589,9 @@ elif st.session_state.user == "Admin":
         with col_pdf_v:
             if 'pdf_view' in st.session_state: st.markdown(st.session_state.pdf_view, unsafe_allow_html=True)
 
-    # TAB 6: FINANZEN & BUNTE DIAGRAMME (Echte Daten, startet leer!)
-    with menue[5]:
+    # TAB 7: FINANZEN & BUNTE DIAGRAMME
+    with menue[6]:
         st.subheader("📊 Studio-Finanzen & Bunte Live-Diagramme")
-        
-        # Echtzeit-Berechnung (Startet bei 0,00 €)
         if not st.session_state.finanzen.empty:
             einnahmen = st.session_state.finanzen[st.session_state.finanzen["Typ"] == "Einnahme"]["Betrag (€)"].sum()
             ausgaben = st.session_state.finanzen[st.session_state.finanzen["Typ"] == "Ausgabe"]["Betrag (€)"].sum()
@@ -544,11 +622,9 @@ elif st.session_state.user == "Admin":
         with col_f2:
             st.markdown("<h4>📈 Visualisierte Umsatz-Auswertungen</h4>", unsafe_allow_html=True)
             if not st.session_state.finanzen.empty:
-                # Chart 1: Buntes Balkendiagramm (Einnahmen vs Ausgaben)
                 st.write("**Gegenüberstellung (Einnahmen vs. Ausgaben):**")
                 st.bar_chart(data=st.session_state.finanzen, x="Typ", y="Betrag (€)", color="Typ", use_container_width=True)
                 
-                # Chart 2: Einnahmen-Aufteilung nach Kategorien
                 einnahmen_df = st.session_state.finanzen[st.session_state.finanzen["Typ"] == "Einnahme"]
                 if not einnahmen_df.empty:
                     st.write("**Umsatzquellen nach Kategorie:**")
@@ -565,7 +641,6 @@ else:
         if st.session_state.user in st.session_state.kunden_liste:
             k_info = st.session_state.kunden_liste[st.session_state.user]
             st.write(f"☕ Dein Wunschgetränk:  \n*{k_info['Kaffee']}*")
-            
         if st.button("Abmelden"):
             st.session_state.user = None
             st.rerun()
@@ -593,7 +668,7 @@ else:
                 if col_buch_btn.button("Jetzt buchen", key=f"book_{idx}"):
                     st.session_state.freie_slots.at[idx, "Status"] = "Gebucht"
                     
-                    # Vollautomatischer Bestandsabzug basierend auf den eingestellten ml / Stk. Werten im Lager!
+                    # Bestandsabzug basierend auf den eingestellten ml / Stk. Werten im Lager
                     for prod, daten in st.session_state.lager_bestand.items():
                         if daten["auto_abzug"] and daten["aktuell"] > 0:
                             st.session_state.lager_bestand[prod]["aktuell"] = max(0.0, daten["aktuell"] - daten["verbrauch_pro_kunde"])
