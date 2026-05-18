@@ -1,6 +1,7 @@
 import streamlit as st
 import pandas as pd
 import datetime
+import base64
 
 # --- SEITENKONFIGURATION ---
 st.set_page_config(
@@ -10,21 +11,47 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# 🌐 DEIN REINER, QUADRATISCHER LOGO-DIREKTLINK:
-LOGO_URL = "https://i.ibb.co/6w2fR6V/1000083367.jpg"
-
 # --- INITIALISIERUNG DER DATEN-SPEICHER ---
-if 'user' not in st.session_state: st.session_state.user = None
-if 'zeiten_naegel' not in st.session_state:
-    st.session_state.zeiten_naegel = {"Neumodellage": 120, "Auffüllen": 90, "French / Extra Design": 45}
-if 'puffer_zeit' not in st.session_state: st.session_state.puffer_zeit = 20
-if 'neukunden_extra_zeit' not in st.session_state: st.session_state.neukunden_extra_zeit = 30  # ⏱️ Extra-Zeit für Neukunden
+if 'user' not in st.session_state: 
+    st.session_state.user = None
 
-# 📢 Speicher für das Schwarze Brett (Studio-News)
+if 'zeiten_naegel' not in st.session_state:
+    st.session_state.zeiten_naegel = {
+        "Neumodellage": 120, 
+        "Auffüllen": 90, 
+        "French / Extra Design": 45
+    }
+
+if 'puffer_zeit' not in st.session_state: 
+    st.session_state.puffer_zeit = 20
+
+if 'neukunden_extra_zeit' not in st.session_state: 
+    st.session_state.neukunden_extra_zeit = 30  
+
+# Speicher für das Schwarze Brett (Studio-News)
 if 'studio_news' not in st.session_state:
     st.session_state.studio_news = "✨ Willkommen im Redline Studio! Ab sofort über 20 neue Chrome-Pigmente verfügbar! ✨"
 if 'news_aktiv' not in st.session_state:
     st.session_state.news_aktiv = True
+
+# 🎨 LIVE-DESIGN-SPEICHER & BRANDING (DEIN DESIGN-PARADIES)
+if 'uploaded_logo' not in st.session_state: 
+    st.session_state.uploaded_logo = None
+if 'uploaded_bg' not in st.session_state: 
+    st.session_state.uploaded_bg = None
+if 'use_background_image' not in st.session_state: 
+    st.session_state.use_background_image = True
+if 'color_bg' not in st.session_state: 
+    st.session_state.color_bg = "#FFF5F5"
+if 'color_primary' not in st.session_state: 
+    st.session_state.color_primary = "#D4A3A3"
+if 'color_accent' not in st.session_state: 
+    st.session_state.color_accent = "#D4AF37"
+if 'color_text' not in st.session_state: 
+    st.session_state.color_text = "#4A3737"
+
+# Standard-Fallback-Bild, falls kein Logo hochgeladen wurde
+LOGO_URL_DEFAULT = "https://i.ibb.co/6w2fR6V/1000083367.jpg"
 
 # 🗃️ ERWEITERTES DYNAMISCHES LAGER
 if 'lager_bestand' not in st.session_state:
@@ -55,11 +82,11 @@ if 'datenschutz_vorlage' not in st.session_state:
         "Die Daten werden vertraulich behandelt und niemals an Dritte weitergegeben."
     )
 
-# Premium Kundenstruktur (inkl. Neukunden-Erkennung)
+# Premium Kundenstruktur
 if 'kunden_liste' not in st.session_state:
     st.session_state.kunden_liste = {
         "Beispiel Kundin": {
-            "Telefon": "+49 123 456789", "Farbe": "#721c24", "Ist_Neukunde": False,
+            "Telefon": "+49 123 456789", "Farbe": "#D4A3A3", "Ist_Neukunde": False,
             "Kaffee": "Cappuccino mit Hafermilch", "Allergien": "Keine", "Notizen": "Bevorzugt mattes Finish", 
             "Anamnese_Text": "Keine Auffälligkeiten", "DSGVO_Akzeptiert": True, "Fotos": []
         }
@@ -69,60 +96,84 @@ if 'freie_slots' not in st.session_state:
     st.session_state.freie_slots = pd.DataFrame(columns=["Datum", "Startzeit", "Endzeit", "Dauer_Minuten", "Feiertag-Hinweis", "Status"])
 if 'termine' not in st.session_state: 
     st.session_state.termine = pd.DataFrame(columns=["Datum", "Uhrzeit", "Kunde", "Typ", "Dauer_Gesamt", "Farbe", "Ist_Neukunde"])
-
-# FINANZEN DATENFRAME
 if 'finanzen' not in st.session_state: 
     st.session_state.finanzen = pd.DataFrame(columns=["Datum", "Typ", "Kategorie", "Betrag (€)"])
 
-# --- DESIGN & STYLE (Weinrot & Gold Luxe Edition) ---
-st.markdown("""
+# --- HINTERGRUND-BILD VERARBEITUNG (CSS Engine) ---
+bg_style = ""
+if st.session_state.use_background_image and st.session_state.uploaded_bg is not None:
+    try:
+        bytes_data = st.session_state.uploaded_bg.getvalue()
+        base64_bg = base64.b64encode(bytes_data).decode()
+        bg_style = f"""
+            background-image: linear-gradient(rgba(255, 255, 255, 0.45), rgba(255, 255, 255, 0.45)), url("data:image/jpeg;base64,{base64_bg}");
+            background-size: cover;
+            background-position: center;
+            background-attachment: fixed;
+        """
+    except Exception:
+        bg_style = f"background-color: {st.session_state.color_bg} !important;"
+else:
+    bg_style = f"background-color: {st.session_state.color_bg} !important;"
+
+# --- COMPREHENSIVE STYLE ENGINE ---
+st.markdown(f"""
     <style>
-    .stApp {
-        background-color: #ffffff;
-        color: #333333;
-    }
-    .main-header {
-        background-color: #721c24;
+    .stApp {{
+        {bg_style}
+        color: {st.session_state.color_text} !important;
+    }}
+    h1, h2, h3, h4, h5, h6, label, .stMarkdown {{
+        color: {st.session_state.color_text} !important;
+        font-family: 'Playfair Display', serif;
+    }}
+    .main-header {{
+        background-color: {st.session_state.color_primary};
         padding: 25px;
         border-radius: 15px;
         text-align: center;
         margin-bottom: 20px;
-        box-shadow: 0 6px 12px rgba(0,0,0,0.15);
+        box-shadow: 0 6px 12px rgba(0,0,0,0.1);
         display: flex;
         align-items: center;
         justify-content: center;
         gap: 25px;
-    }
-    .main-header h1 {
-        color: #d4af37 !important;
-        font-family: 'Playfair Display', serif;
+        border-bottom: 3px solid {st.session_state.color_accent};
+    }}
+    .main-header h1 {{
+        color: #ffffff !important;
         font-size: 3.2rem;
         margin: 0;
-    }
-    .main-header p {
-        color: #f8f9fa;
+        text-shadow: 1px 1px 3px rgba(0,0,0,0.2);
+    }}
+    .main-header p {{
+        color: #ffffff;
         font-size: 1.3rem;
         font-style: italic;
         margin-top: 5px;
-    }
-    .main-logo-img {
+        opacity: 0.95;
+    }}
+    .main-logo-img {{
         max-height: 100px;
-        border-radius: 12px;
-        border: 2px solid #d4af37;
-    }
-    .news-banner {
-        background-color: #721c24;
-        color: #d4af37;
-        border: 2px solid #d4af37;
+        max-width: 100px;
+        border-radius: 50%;
+        object-fit: cover;
+        border: 2px solid {st.session_state.color_accent};
+    }}
+    .news-banner {{
+        background-color: rgba(255, 255, 255, 0.85);
+        color: {st.session_state.color_text};
+        border: 2px solid {st.session_state.color_accent};
         padding: 15px;
         border-radius: 10px;
         text-align: center;
         font-size: 1.2rem;
         font-weight: bold;
         margin-bottom: 25px;
-        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-    }
-    .material-alert {
+        backdrop-filter: blur(5px);
+        box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+    }}
+    .material-alert {{
         background-color: #fff3cd;
         color: #856404;
         border: 2px solid #ffeeba;
@@ -130,70 +181,75 @@ st.markdown("""
         border-radius: 8px;
         font-weight: bold;
         margin-bottom: 10px;
-    }
-    .stButton>button {
-        background-color: #721c24 !important;
-        color: #d4af37 !important;
-        border: 2px solid #d4af37 !important;
+    }}
+    .stButton>button {{
+        background-color: {st.session_state.color_primary} !important;
+        color: #ffffff !important;
+        border: 1px solid {st.session_state.color_accent} !important;
         border-radius: 8px !important;
         font-weight: bold !important;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
         transition: all 0.3s ease;
-    }
-    .stButton>button:hover {
-        background-color: #d4af37 !important;
-        color: #721c24 !important;
+    }}
+    .stButton>button:hover {{
+        background-color: {st.session_state.color_accent} !important;
+        color: {st.session_state.color_text} !important;
         transform: scale(1.02);
-    }
-    .card {
-        background-color: #f8f9fa;
+    }}
+    .card {{
+        background-color: rgba(255, 255, 255, 0.85);
+        backdrop-filter: blur(10px);
         padding: 20px;
-        border-radius: 8px;
-        border-left: 5px solid #721c24;
+        border-radius: 12px;
+        border-left: 5px solid {st.session_state.color_primary};
         margin-bottom: 20px;
-        box-shadow: 0 2px 4px rgba(0,0,0,0.05);
-    }
-    .kunden-akte {
-        background-color: #fffdf9;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.03);
+    }}
+    .kunden-akte {{
+        background-color: rgba(255, 255, 255, 0.9);
+        backdrop-filter: blur(10px);
         padding: 25px;
         border-radius: 12px;
-        border: 1px solid #d4af37;
+        border: 1px solid {st.session_state.color_accent};
         margin-top: 15px;
-    }
-    .calendar-box {
-        border: 1px solid #721c24;
+    }}
+    .calendar-box {{
+        border: 1px solid {st.session_state.color_primary};
         padding: 12px;
         border-radius: 8px;
         margin-bottom: 8px;
-        color: white;
-    }
-    .pdf-frame {
-        border: 2px solid #721c24;
+        color: {st.session_state.color_text};
+        background-color: rgba(255,255,255,0.9);
+        border-left: 6px solid {st.session_state.color_accent};
+    }}
+    .pdf-frame {{
+        border: 2px solid {st.session_state.color_primary};
         padding: 25px;
         background-color: white;
         color: black;
         font-family: 'Courier New', monospace;
         box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-    }
-    .vergleichs-box {
-        background-color: #f8f9fa;
+    }}
+    .vergleichs-box {{
+        background-color: rgba(255, 255, 255, 0.8);
         padding: 15px;
         border-radius: 8px;
-        border: 1px solid #e0e0e0;
+        border: 1px solid {st.session_state.color_accent};
         text-align: center;
         margin-bottom: 10px;
-    }
-    .scroll-container {
+    }}
+    .scroll-container {{
         max-height: 380px;
         overflow-y: auto;
         padding-right: 8px;
-        border: 1px solid #e0e0e0;
+        border: 1px solid {st.session_state.color_accent};
         border-radius: 6px;
-        background-color: #fafafa;
-    }
+        background-color: rgba(255,255,255,0.7);
+    }}
     </style>
 """, unsafe_allow_html=True)
 
-# --- FEIERTAGE-BERECHNER ---
+# --- FEIERTAGS-FINDER ---
 def get_feiertag(datum):
     jahr = datum.year
     feste = {
@@ -217,9 +273,19 @@ def get_feiertag(datum):
     return None
 
 def show_logo_and_header():
+    if st.session_state.uploaded_logo is not None:
+        try:
+            bytes_logo = st.session_state.uploaded_logo.getvalue()
+            base64_logo = base64.b64encode(bytes_logo).decode()
+            logo_src = f"data:image/jpeg;base64,{base64_logo}"
+        except Exception:
+            logo_src = LOGO_URL_DEFAULT
+    else:
+        logo_src = LOGO_URL_DEFAULT
+
     st.markdown(f"""
         <div class='main-header'>
-            <img src='{LOGO_URL}' class='main-logo-img' onerror="this.style.display='none'">
+            <img src='{logo_src}' class='main-logo-img'>
             <div>
                 <h1>Redline Studio</h1>
                 <p>Kreativität & Eleganz</p>
@@ -229,52 +295,92 @@ def show_logo_and_header():
     if st.session_state.news_aktiv and st.session_state.studio_news:
         st.markdown(f"<div class='news-banner'>📢 {st.session_state.studio_news}</div>", unsafe_allow_html=True)
 
-# --- STARTSEITE: KUNDEN- & ADMIN-LOGIN ---
+# --- LOGIN- UND REGISTRIERUNGSSYSTEM ---
 if st.session_state.user is None:
     show_logo_and_header()
     st.markdown("<h2 style='text-align: center;'>Willkommen im Redline Studio</h2>", unsafe_allow_html=True)
     
     col1, col2, col3 = st.columns([1, 2, 1])
     with col2:
-        with st.form(key="login_form", clear_on_submit=False):
-            st.markdown("##### 🔑 Login-Bereich")
-            
-            passwort_verbergen = st.checkbox("🔒 Sicherheits-Modus (Schrift zu Punkten machen)")
-            input_type = "password" if passwort_verbergen else "default"
-            
-            name_eingabe = st.text_input(
-                "Dein Name (Kunden) ODER Admin-Passwort (Studioleitung) *", 
-                placeholder="Hier eintippen und Enter drücken...",
-                type=input_type
-            )
-            
-            submit_login = st.form_submit_button("Anmelden & Weiter", use_container_width=True)
-            
-            if submit_login:
-                bereinigte_eingabe = name_eingabe.strip()
+        tab_log, tab_reg = st.tabs(["🔑 Anmelden", "✨ Neu registrieren"])
+        
+        with tab_log:
+            with st.form(key="login_form", clear_on_submit=False):
+                st.markdown("##### Bitte Zugangsdaten eingeben")
+                passwort_verbergen = st.checkbox("🔒 Sicherheits-Modus (Schrift zu Punkten machen)", key="chk_sec")
+                input_type = "password" if passwort_verbergen else "default"
                 
-                if bereinigte_eingabe == "Alocasia":
-                    st.session_state.user = "Admin"
-                    st.rerun()
-                elif bereinigte_eingabe.lower() == "admin123":
-                    st.error("❌ Das alte Passwort 'admin123' ist nicht mehr gültig! Bitte benutze das neue Passwort.")
-                elif passwort_verbergen and len(bereinigte_eingabe) > 0 and bereinigte_eingabe != "Alocasia":
-                    st.error("⚠️ Du hast den Sicherheits-Modus für das Admin-Passwort aktiviert! Wenn du eine Kundin bist, schalte bitte diesen Haken aus, damit du deinen Namen unverschlüsselt eingeben kannst.")
-                elif bereinigte_eingabe == "":
-                    st.error("Bitte gib einen Namen oder ein gültiges Passwort ein.")
-                else:
-                    st.session_state.user = bereinigte_eingabe
-                    if st.session_state.user not in st.session_state.kunden_liste:
-                        st.session_state.kunden_liste[st.session_state.user] = {
-                            "Telefon": "", "Farbe": "#721c24", "Kaffee": "Noch unbekannt", "Allergien": "Keine", "Notizen": "",
-                            "Anamnese_Text": "", "DSGVO_Akzeptiert": False, "Fotos": [], "Ist_Neukunde": True
+                name_eingabe = st.text_input(
+                    "Dein Name ODER Admin-Passwort *", 
+                    placeholder="Hier eintippen...",
+                    type=input_type,
+                    key="log_name_in"
+                )
+                submit_login = st.form_submit_button("Anmelden & Weiter", use_container_width=True)
+                
+                if submit_login:
+                    bereinigte_eingabe = name_eingabe.strip()
+                    if bereinigte_eingabe == "Alocasia":
+                        st.session_state.user = "Admin"
+                        st.rerun()
+                    elif bereinigte_eingabe == "":
+                        st.error("Bitte gib einen Namen oder ein gültiges Passwort ein.")
+                    else:
+                        if bereinigte_eingabe in st.session_state.kunden_liste:
+                            st.session_state.user = bereinigte_eingabe
+                            st.success(f"Willkommen zurück, {bereinigte_eingabe}! ✨")
+                            st.rerun()
+                        else:
+                            st.error("❌ Name nicht gefunden. Bitte registriere dich zuerst im Reiter nebenan!")
+
+        with tab_reg:
+            with st.form(key="register_form", clear_on_submit=True):
+                st.markdown("##### ✨ Erstelle deine digitale Kundenkartei")
+                reg_name = st.text_input("Vollständiger Name *", placeholder="Vorname Nachname")
+                reg_tel = st.text_input("Telefonnummer für Rückfragen", placeholder="+49 ...")
+                reg_kaffee = st.text_input("☕ Wie trinkst du deinen Kaffee / Tee?", placeholder="z.B. Latte Macchiato mit Zucker")
+                reg_allergien = st.text_input("⚠️ Bekannte Allergien / Unverträglichkeiten", value="Keine")
+                reg_notizen = st.text_area("💅 Besondere Wünsche für deine Nägel", placeholder="z.B. Mag glitzernde Overlays, nur Mandelform...")
+                
+                st.markdown("---")
+                st.markdown(f"**Medizinische Anamnese-Fragen:**\n{st.session_state.anamnese_vorlage}")
+                reg_anamnese_antwort = st.text_area("Deine Antworten zur Anamnese:", placeholder="Bitte hier wahrheitsgemäß beantworten...")
+                
+                st.markdown("---")
+                st.markdown(f"**Datenschutz-Einwilligung (DSGVO):**\n{st.session_state.datenschutz_vorlage}")
+                reg_dsgvo = st.checkbox("Ich stimme den oben genannten Datenschutzbestimmungen vollinhaltlich zu. *")
+                
+                submit_reg = st.form_submit_button("Registrierung abschließen ✨", use_container_width=True)
+                
+                if submit_reg:
+                    if not reg_name.strip():
+                        st.error("Bitte gib einen Namen ein.")
+                    elif not reg_dsgvo:
+                        st.error("Du musst den Datenschutzbestimmungen zustimmen, um die App nutzen zu können.")
+                    elif reg_name.strip() in st.session_state.kunden_liste:
+                        st.error("Dieser Name existiert bereits! Bitte logge dich einfach im Anmelde-Tab ein.")
+                    else:
+                        neuer_name = reg_name.strip()
+                        st.session_state.kunden_liste[neuer_name] = {
+                            "Telefon": reg_tel.strip(),
+                            "Farbe": st.session_state.color_primary,
+                            "Kaffee": reg_kaffee.strip() if reg_kaffee.strip() else "Noch unbekannt",
+                            "Allergien": reg_allergien.strip() if reg_allergien.strip() else "Keine",
+                            "Notizen": reg_notizen.strip(),
+                            "Anamnese_Text": reg_anamnese_antwort.strip(),
+                            "DSGVO_Akzeptiert": True,
+                            "Fotos": [],
+                            "Ist_Neukunde": True
                         }
-                    st.rerun()
+                        st.session_state.user = neuer_name
+                        st.success("Konto erfolgreich erstellt! Du bist jetzt eingeloggt. 🎉")
+                        st.rerun()
 
 # --- BEREICH: ADMIN-DASHBOARD ---
 elif st.session_state.user == "Admin":
     show_logo_and_header()
     
+    # Materialwarnungen ganz oben einblenden
     for produkt, daten in st.session_state.lager_bestand.items():
         if daten["aktuell"] <= daten["limit"]:
             st.markdown(f"""
@@ -314,7 +420,8 @@ elif st.session_state.user == "Admin":
         "📢 Schwarzes Brett & Lager", 
         "🛒 Material-Einkauf & Vergleich", 
         "📄 Dokumente & Quittungen", 
-        "📊 Finanzen & Bunte Diagramme"
+        "📊 Finanzen & Bunte Diagramme",
+        "🎨 Studio-Design & Branding"
     ])
     
     # TAB 1: KALENDER & ARBEITSZEITEN
@@ -333,7 +440,7 @@ elif st.session_state.user == "Admin":
             feiertag_name = get_feiertag(slot_datum)
             hinweis_text = feiertag_name if feiertag_name else "-"
             if feiertag_name:
-                st.markdown(f"<span style='color: #721c24;'>ℹ️ Hinweis: An diesem Tag ist {feiertag_name}.</span>", unsafe_allow_html=True)
+                st.markdown(f"<span style='color: {st.session_state.color_primary};'>ℹ️ Hinweis: An diesem Tag ist {feiertag_name}.</span>", unsafe_allow_html=True)
                 
             start_zeit = st.time_input("Von", datetime.time(14, 0))
             end_zeit = st.time_input("Bis", datetime.time(17, 0))
@@ -373,10 +480,10 @@ elif st.session_state.user == "Admin":
                 st.info("Keine Termine für diesen Zeitraum gebucht.")
             else:
                 for _, t in aktuelle_termine.iterrows():
-                    bg_color = t['Farbe'] if 'Farbe' in t and t['Farbe'] else "#721c24"
+                    bg_color = t['Farbe'] if 'Farbe' in t and t['Farbe'] else st.session_state.color_primary
                     status_hinweis = "⚠️ NEUKUNDE (inkl. Extra-Zeit)" if t.get("Ist_Neukunde", False) else "Stammkunde"
                     st.markdown(f"""
-                        <div class='calendar-box' style='background-color: {bg_color};'>
+                        <div class='calendar-box' style='border-left: 6px solid {bg_color};'>
                             <strong>📅 {t['Datum']} | ⏰ {t['Uhrzeit']} Uhr</strong><br>
                             👤 Kunde: {t['Kunde']} ({status_hinweis})<br>
                             💅 Behandlung: {t['Typ']} ({t['Dauer_Gesamt']} Min. inkl. Puffer)
@@ -396,7 +503,7 @@ elif st.session_state.user == "Admin":
             if st.button("Kundin in Kartei aufnehmen", use_container_width=True):
                 if n_name and n_name not in st.session_state.kunden_liste:
                     st.session_state.kunden_liste[n_name.strip()] = {
-                        "Telefon": "", "Farbe": "#721c24", "Kaffee": "", "Allergien": "", "Notizen": "", 
+                        "Telefon": "", "Farbe": st.session_state.color_primary, "Kaffee": "", "Allergien": "", "Notizen": "", 
                         "Anamnese_Text": "", "DSGVO_Akzeptiert": False, "Fotos": [], "Ist_Neukunde": False
                     }
                     st.success("Kundin angelegt!")
@@ -508,7 +615,7 @@ elif st.session_state.user == "Admin":
                     st.rerun()
                 st.write("---")
 
-    # TAB 5: MATERIAL-EINKAUF-FAVORITEN & WEBSEITEN-PREISVERGLEICH (Mit Shein & AliExpress)
+    # TAB 5: MATERIAL-EINKAUF-FAVORITEN & VERGLEICH
     with menue[4]:
         st.subheader("🛒 Material-Katalog mit Foto-Upload & Live-Preisvergleich")
         col_cat1, col_cat2 = st.columns([1, 2])
@@ -563,7 +670,7 @@ elif st.session_state.user == "Admin":
         cc7.write("") 
         cc8.write("") 
 
-    # TAB 6: BEARBEITBARE RECHNUNGEN & QUITTUNGEN
+    # TAB 6: BEARBEITBARE RECHNUNGEN
     with menue[5]:
         st.subheader("📄 Bearbeitbare Quittungen & Automatisierte Material-Anrechnung")
         col_pdf_f, col_pdf_v = st.columns([1, 2])
@@ -589,13 +696,22 @@ elif st.session_state.user == "Admin":
             doc_typ = st.radio("Dokumententyp:", ["Professionelle Quittung", "Einverständniserklärung"], horizontal=True)
             
             if st.button("Dokument generieren & anzeigen", use_container_width=True):
-                logo_html = f"<img src='{LOGO_URL}' style='max-height: 60px; float: right; border-radius: 8px;' onerror='this.style.display=\"none\"'>"
+                if st.session_state.uploaded_logo is not None:
+                    try:
+                        bytes_logo = st.session_state.uploaded_logo.getvalue()
+                        base64_logo = base64.b64encode(bytes_logo).decode()
+                        logo_html = f"<img src='data:image/jpeg;base64,{base64_logo}' style='max-height: 60px; float: right; border-radius: 8px;'>"
+                    except Exception:
+                        logo_html = ""
+                else:
+                    logo_html = ""
+
                 if doc_typ == "Professionelle Quittung":
                     st.session_state.pdf_view = f"""
                         <div class='pdf-frame'>
                             {logo_html}
-                            <h1 style='color: #721c24; margin:0;'>Redline Studio</h1>
-                            <hr style='border: 1px solid #721c24;'>
+                            <h1 style='color: {st.session_state.color_primary}; margin:0;'>Redline Studio</h1>
+                            <hr style='border: 1px solid {st.session_state.color_primary};'>
                             <h2 style='text-align: center;'>OFFIZIELLE QUITTUNG</h2>
                             <p><strong>Datum:</strong> {doc_datum.strftime('%d.%m.%Y')}</p>
                             <p><strong>Kunde:</strong> {doc_kunde}</p>
@@ -621,8 +737,8 @@ elif st.session_state.user == "Admin":
                     st.session_state.pdf_view = f"""
                         <div class='pdf-frame'>
                             {logo_html}
-                            <h1 style='color: #721c24; margin:0;'>Redline Studio</h1>
-                            <hr style='border: 1px solid #721c24;'>
+                            <h1 style='color: {st.session_state.color_primary}; margin:0;'>Redline Studio</h1>
+                            <hr style='border: 1px solid {st.session_state.color_primary};'>
                             <h2 style='text-align: center;'>Einverständniserklärung & Protokoll</h2>
                             <p><strong>Datum:</strong> {doc_datum.strftime('%d.%m.%Y')}</p>
                             <p><strong>Kunde:</strong> {doc_kunde}</p>
@@ -637,9 +753,10 @@ elif st.session_state.user == "Admin":
                     """
                 st.rerun()
         with col_pdf_v:
-            if 'pdf_view' in st.session_state: st.markdown(st.session_state.pdf_view, unsafe_allow_html=True)
+            if 'pdf_view' in st.session_state: 
+                st.markdown(st.session_state.pdf_view, unsafe_allow_html=True)
 
-    # TAB 7: FINANZEN & BUNTE DIAGRAMME
+    # TAB 7: FINANZEN
     with menue[6]:
         st.subheader("📊 Studio-Finanzen & Bunte Live-Diagramme")
         if not st.session_state.finanzen.empty:
@@ -687,6 +804,71 @@ elif st.session_state.user == "Admin":
             else:
                 st.info("Sobald Transaktionen vorliegen, entstehen hier die Grafiken!")
 
+    # TAB 8: DYNAMISCHER DESIGN- & BRANDING-SCHALTER (DEIN NEUES UNGEKÜRZTES DESIGN-PARADIES! 🎉🌈✨)
+    with menue[7]:
+        st.subheader("🎨✨ Willkommen im Redline Design-Paradies! ✨🌈🔮")
+        st.markdown("""
+            <div style='background: linear-gradient(45deg, #FFDEE9 0%, #B5FFFC 100%); padding: 20px; border-radius: 12px; border: 2px dashed #FF1493; text-align: center;'>
+                <h3 style='color: #FF1493 !important; margin: 0;'>🥰 Lass deiner Kreativität freien Lauf! 🥰</h3>
+                <p style='color: #4A3737 !important; font-size: 1.1rem; margin: 5px 0 0 0;'>Hier kannst du das Studio ganz nach deinen Wünschen stylen – bunt, glitzernd und absolut professionell! 💅💖⭐</p>
+            </div>
+        """, unsafe_allow_html=True)
+        
+        st.write("")
+        col_up1, col_up2 = st.columns(2)
+        
+        with col_up1:
+            st.markdown("### 👑 Foto-Upload: Dein Studio-Logo")
+            uploaded_logo_file = st.file_uploader("Wähle dein Logo-Bild von deinem Gerät aus 📸", type=["jpg", "png", "jpeg"], key="design_logo_uploader")
+            if uploaded_logo_file is not None:
+                st.session_state.uploaded_logo = uploaded_logo_file
+                st.success("🎉 Super! Dein Logo wurde geladen und strahlt jetzt ganz oben!")
+                
+        with col_up2:
+            st.markdown("### 🖼️ Foto-Upload: Dein App-Hintergrund")
+            uploaded_bg_file = st.file_uploader("Wähle dein tolles Rosé-Hintergrundbild aus ✨", type=["jpg", "png", "jpeg"], key="design_bg_uploader")
+            if uploaded_bg_file is not None:
+                st.session_state.uploaded_bg = uploaded_bg_file
+                st.success("🌈 Wunderschön! Das Hintergrundbild wurde erfolgreich gesetzt!")
+
+        st.write("---")
+        st.session_state.use_background_image = st.checkbox(
+            "🖼️ Das hochgeladene Hintergrundbild aktiv im Studio anzeigen", 
+            value=st.session_state.use_background_image
+        )
+        
+        st.write("---")
+        auswahl_design = st.radio(
+            "🎈 Schnell-Auswahl vorgefertigter Styles:",
+            ["Rosé-Gold Luxus (Perfekt für dein Bild) 🥰", "Klassisches Weinrot 🍷", "Völlig freie Farbgestaltung 🎨🌈"],
+            horizontal=True
+        )
+        
+        if "Rosé-Gold Luxus" in auswahl_design:
+            st.session_state.color_bg = "#FFF5F5"
+            st.session_state.color_primary = "#D4A3A3"
+            st.session_state.color_accent = "#D4AF37"
+            st.session_state.color_text = "#4A3737"
+        
+        elif "Klassisches Weinrot" in auswahl_design:
+            st.session_state.color_bg = "#ffffff"
+            st.session_state.color_primary = "#721c24"
+            st.session_state.color_accent = "#d4af37"
+            st.session_state.color_text = "#333333"
+            
+        elif "Völlig freie Farbgestaltung" in auswahl_design:
+            st.write("---")
+            st.markdown("##### 🎛️ Mische deine eigenen Traumfarben zusammen:")
+            c_p1, c_p2, c_p3, c_p4 = st.columns(4)
+            st.session_state.color_bg = c_p1.color_picker("Fallback-Hintergrundfarbe (falls Bild aus):", st.session_state.color_bg)
+            st.session_state.color_primary = c_p2.color_picker("Haupt-Farbe (Header/Knöpfe):", st.session_state.color_primary)
+            st.session_state.color_accent = c_p3.color_picker("Akzent-Glanzfarbe (Gold/Linien):", st.session_state.color_accent)
+            st.session_state.color_text = c_p4.color_picker("Schriftfarbe für alle Texte:", st.session_state.color_text)
+
+        if st.button("✨ Alle Design-Änderungen sofort live speichern! 💖", use_container_width=True):
+            st.success("💎 Wunderbar! Dein Studio-Branding wurde aktualisiert!")
+            st.rerun()
+
 # --- SEITE: KUNDEN-BUCHUNG ---
 else:
     show_logo_and_header()
@@ -696,10 +878,17 @@ else:
     with st.sidebar:
         st.write(f"🌸 Kundin: **{st.session_state.user}**")
         if ist_neukunde_erkannt:
-            st.markdown("<span style='color: #721c24; font-weight:bold;'>✨ Neukundinnen-Status aktiv (inkl. Erstberatung)</span>", unsafe_allow_html=True)
+            st.markdown(f"<span style='color: {st.session_state.color_primary}; font-weight:bold;'>✨ Neukundinnen-Status aktiv (inkl. Erstberatung)</span>", unsafe_allow_html=True)
         else:
             st.write("👑 Status: Stammkundin")
-        if st.button("Abmelden"):
+        
+        st.write("---")
+        st.markdown("##### ☕ Dein Service-Profil:")
+        st.write(f"**Getränkewunsch:** {st.session_state.kunden_liste[st.session_state.user]['Kaffee']}")
+        st.write(f"**Allergien:** {st.session_state.kunden_liste[st.session_state.user]['Allergien']}")
+        
+        st.write("---")
+        if st.button("Abmelden", use_container_width=True):
             st.session_state.user = None
             st.rerun()
             
@@ -724,10 +913,11 @@ else:
             verfuegbare_minuten = int(row["Dauer_Minuten"])
             if verfuegbare_minuten >= gesamte_blockade_zeit:
                 col_slot, col_buch_btn = st.columns([3, 1])
-                col_slot.write(f"📅 **{row['Datum']}** | ⏰ Von {row['Startzeit']} bis {row['Endzeit']} Uhr")
+                col_slot.write(f"📅 **{row['Datum']}** | ⏰ Von {row['Startzeit']} bis {row['Endzeit']} Uhr " + (f"({row['Feiertag-Hinweis']})" if row['Feiertag-Hinweis'] != "-" else ""))
                 if col_buch_btn.button("Jetzt buchen", key=f"book_{idx}"):
                     st.session_state.freie_slots.at[idx, "Status"] = "Gebucht"
                     
+                    # Automatisierter Materialabzug bei Buchung
                     for prod, daten in st.session_state.lager_bestand.items():
                         if daten["auto_abzug"] and daten["aktuell"] > 0:
                             st.session_state.lager_bestand[prod]["aktuell"] = max(0.0, daten["aktuell"] - daten["verbrauch_pro_kunde"])
@@ -737,8 +927,8 @@ else:
                                                 columns=["Datum", "Uhrzeit", "Kunde", "Typ", "Dauer_Gesamt", "Farbe", "Ist_Neukunde"])
                     st.session_state.termine = pd.concat([st.session_state.termine, neuer_termin], ignore_index=True)
                     
+                    # Nach Erstbuchung ist man kein Neukunde mehr im automatischen System
                     st.session_state.kunden_liste[st.session_state.user]["Ist_Neukunde"] = False
                     
                     st.success("Erfolgreich gebucht! Wir freuen uns auf dich! 🎉")
                     st.rerun()
-
