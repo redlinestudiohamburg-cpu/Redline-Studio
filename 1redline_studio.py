@@ -25,13 +25,16 @@ if 'studio_news' not in st.session_state:
 if 'news_aktiv' not in st.session_state:
     st.session_state.news_aktiv = True
 
-# 🗃️ Speicher für den intelligenten Material-Warner
-if 'feilen_bestand' not in st.session_state:
-    st.session_state.feilen_bestand = 20  
-if 'feilen_warnlimit' not in st.session_state:
-    st.session_state.feilen_warnlimit = 5  
+# 🗃️ ERWEITERTES DYNAMISCHES LAGER (Flexibler Material-Warner)
+if 'lager_bestand' not in st.session_state:
+    st.session_state.lager_bestand = {
+        "Nagelfeilen": {"aktuell": 20, "limit": 5, "auto_abzug": True},
+        "Primer": {"aktuell": 4, "limit": 1, "auto_abzug": False},
+        "Top Coat": {"aktuell": 6, "limit": 2, "auto_abzug": False},
+        "Cleaner (Liter)": {"aktuell": 3, "limit": 1, "auto_abzug": False}
+    }
 
-# Erweiterte Kundenstruktur
+# Premium Kundenstruktur
 if 'kunden_liste' not in st.session_state:
     st.session_state.kunden_liste = {
         "Beispiel Kundin": {
@@ -40,9 +43,17 @@ if 'kunden_liste' not in st.session_state:
         }
     }
 
-if 'freie_slots' not in st.session_state: st.session_state.freie_slots = pd.DataFrame(columns=["Datum", "Startzeit", "Endzeit", "Dauer_Minuten", "Feiertag-Hinweis", "Status"])
-if 'termine' not in st.session_state: st.session_state.termine = pd.DataFrame(columns=["Datum", "Uhrzeit", "Kunde", "Typ", "Dauer_Gesamt", "Farbe"])
-if 'finanzen' not in st.session_state: st.session_state.finanzen = pd.DataFrame(columns=["Datum", "Typ", "Kategorie", "Betrag (€)"])
+if 'freie_slots' not in st.session_state: 
+    st.session_state.freie_slots = pd.DataFrame(columns=["Datum", "Startzeit", "Endzeit", "Dauer_Minuten", "Feiertag-Hinweis", "Status"])
+if 'termine' not in st.session_state: 
+    st.session_state.termine = pd.DataFrame(columns=["Datum", "Uhrzeit", "Kunde", "Typ", "Dauer_Gesamt", "Farbe"])
+
+# Initialisierung Finanzen mit Beispielwerten für schöne bunte Diagramme
+if 'finanzen' not in st.session_state: 
+    st.session_state.finanzen = pd.DataFrame([
+        {"Datum": datetime.date.today().strftime('%Y-%m-%d'), "Typ": "Einnahme", "Kategorie": "Neumodellage", "Betrag (€)": 85.0},
+        {"Datum": datetime.date.today().strftime('%Y-%m-%d'), "Typ": "Ausgabe", "Kategorie": "Materialeinkauf", "Betrag (€)": 45.0}
+    ], columns=["Datum", "Typ", "Kategorie", "Betrag (€)"])
 
 # --- DESIGN & STYLE (Weinrot & Gold Luxe Edition) ---
 st.markdown("""
@@ -99,7 +110,7 @@ st.markdown("""
         padding: 15px;
         border-radius: 8px;
         font-weight: bold;
-        margin-bottom: 20px;
+        margin-bottom: 10px;
     }
     .stButton>button {
         background-color: #721c24 !important;
@@ -183,7 +194,7 @@ def get_feiertag(datum):
     
     if datum == oster_datum - datetime.timedelta(days=2): return "Karfreitag"
     if datum == oster_datum: return "Ostersonntag"
-    if datum == oster_datum + datetime.timedelta(days=1): return "Ostermontag"
+    if datum == oster_datum + datetime.timedelta(days=1): return "Ostermonntag"
     if datum == oster_datum + datetime.timedelta(days=39): return "Auffahrt / Himmelfahrt"
     if datum == oster_datum + datetime.timedelta(days=50): return "Pfingstmontag"
     if (datum.day, datum.month) in feste: return feste[(datum.day, datum.month)]
@@ -230,13 +241,16 @@ if st.session_state.user is None:
 elif st.session_state.user == "Admin":
     show_logo_and_header()
     
-    if st.session_state.feilen_bestand <= st.session_state.feilen_warnlimit:
-        st.markdown(f"""
-            <div class='material-alert'>
-                ⚠️ MATERIAL-WARNUNG: Der Bestand an Nagelfeilen ist kritisch! <br>
-                Aktueller Vorrat: {st.session_state.feilen_bestand} Stück (Eingestelltes Limit: ab {st.session_state.feilen_warnlimit} Stück warnen).
-            </div>
-        """, unsafe_allow_html=True)
+    # Globaler intelligenter Material-Warner (Prüft alle Produkte auf Limits)
+    warnungen_aktiv = False
+    for produkt, daten in st.session_state.lager_bestand.items():
+        if daten["aktuell"] <= daten["limit"]:
+            st.markdown(f"""
+                <div class='material-alert'>
+                    ⚠️ MATERIAL-WARNUNG: <strong>{produkt}</strong> geht zur Neige! Vorrat: {daten['aktuell']} (Limit: ab {daten['limit']}).
+                </div>
+            """, unsafe_allow_html=True)
+            warnungen_aktiv = True
     
     with st.sidebar:
         st.write(f"💼 Modus: **{st.session_state.user}**")
@@ -244,13 +258,12 @@ elif st.session_state.user == "Admin":
         heute_str = datetime.date.today().strftime('%Y-%m-%d')
         termine_heute = len(st.session_state.termine[st.session_state.termine["Datum"] == heute_str]) if not st.session_state.termine.empty else 0
         st.metric(label="Termine heute", value=termine_heute)
-        st.metric(label="Feilen übrig", value=f"{st.session_state.feilen_bestand} Stk.")
         
         if st.button("Abmelden", use_container_width=True):
             st.session_state.user = None
             st.rerun()
             
-    menue = st.tabs(["🗓️ Kalender & Slots", "👥 Digitale Luxus-Kartei", "📢 Schwarzes Brett & Lager", "📄 Dokumente & Quittungen", "📊 Finanzen & Zeiten"])
+    menue = st.tabs(["🗓️ Kalender & Slots", "👥 Digitale Luxus-Kartei", "📢 Schwarzes Brett & Lager", "📄 Dokumente & Quittungen", "📊 Finanzen & Diagramme"])
     
     # TAB 1: KALENDER & ARBEITSZEITEN
     with menue[0]:
@@ -282,7 +295,7 @@ elif st.session_state.user == "Admin":
                     st.rerun()
             
             st.write("---")
-            # 🌟 HIER WAR DER FEHLER BEHOBEN: st.session_state statt st.
+            # 🌟 REPARIERT: Nutzt nun korrekt st.session_state.freie_slots statt des fehlerhaften st.freie_slots
             st.dataframe(st.session_state.freie_slots, use_container_width=True)
             if st.button("Alle Slots zurücksetzen"):
                 st.session_state.freie_slots = pd.DataFrame(columns=["Datum", "Startzeit", "Endzeit", "Dauer_Minuten", "Feiertag-Hinweis", "Status"])
@@ -296,7 +309,10 @@ elif st.session_state.user == "Admin":
             st.write("### Termine in der Übersicht:")
             if not st.session_state.termine.empty:
                 st.session_state.termine["Datum_Parsed"] = pd.to_datetime(st.session_state.termine["Datum"]).dt.date
-                aktuelle_termine = st.session_state.termine[st.session_state.termine["Datum_Parsed"] == wahl_datum] if view_mode == "Tag" else st.session_state.termine[(pd.to_datetime(st.session_state.termine["Datum"]).dt.month == wahl_datum.month) & (pd.to_datetime(st.session_state.termine["Datum"]).dt.year == wahl_datum.year)]
+                if view_mode == "Tag":
+                    aktuelle_termine = st.session_state.termine[st.session_state.termine["Datum_Parsed"] == wahl_datum]
+                else:
+                    aktuelle_termine = st.session_state.termine[(pd.to_datetime(st.session_state.termine["Datum"]).dt.month == wahl_datum.month) & (pd.to_datetime(st.session_state.termine["Datum"]).dt.year == wahl_datum.year)]
             else:
                 aktuelle_termine = pd.DataFrame()
                 
@@ -315,7 +331,7 @@ elif st.session_state.user == "Admin":
                     txt_msg = f"Hallo {t['Kunde']}, ich freue mich auf unseren Nagel-Termin am {t['Datum']} um {t['Uhrzeit']} Uhr im Redline Studio! 💅"
                     st.text_area("📋 Fertiger WhatsApp-Text zum Kopieren:", value=txt_msg, height=70, key=f"wa_{t['Kunde']}_{t['Uhrzeit']}")
 
-# --- TAB 2: DIGITALE LUXUS-KARTEI ---
+    # TAB 2: DIGITALE LUXUS-KARTEI
     with menue[1]:
         st.subheader("👥 Redline Premium Kundenkartei")
         col_k_liste, col_k_akte = st.columns([1, 2])
@@ -356,30 +372,47 @@ elif st.session_state.user == "Admin":
                         cols_img[idx % 3].image(img, use_container_width=True, caption=f"Modellage {idx+1}")
                 st.markdown("</div>", unsafe_allow_html=True)
 
-    # TAB 3: SCHWARZES BRETT & INTELLIGENTES LAGER
+    # TAB 3: SCHWARZES BRETT & INTELLIGENTES LAGER (Dynamisch erweitert)
     with menue[2]:
-        st.subheader("📢 Studio-Management & Material-Warner")
-        col_board, col_lager = st.columns(2)
+        st.subheader("📢 Studio-Management & Flexibles Lager")
+        col_board, col_lager = st.columns([1, 1])
         
         with col_board:
             st.markdown("<div class='card'><h4>📢 Digitales Schwarzes Brett konfigurieren</h4></div>", unsafe_allow_html=True)
             st.session_state.news_aktiv = st.checkbox("Schwarzes Brett für Kunden sichtbar schalten", value=st.session_state.news_aktiv)
-            st.session_state.studio_news = st.text_area("Aushang-Text (wird ganz oben für Kunden eingeblendet):", value=st.session_state.studio_news)
+            st.session_state.studio_news = st.text_area("Aushang-Text:", value=st.session_state.studio_news)
             if st.button("Aushang aktualisieren"):
                 st.success("Das Schwarze Brett wurde live aktualisiert!")
                 st.rerun()
                 
-        with col_lager:
-            st.markdown("<div class='card'><h4>📦 Intelligenter Nagelfeilen-Warner</h4></div>", unsafe_allow_html=True)
-            st.write("Das System zieht bei jeder erfolgreichen Kundenbuchung vollautomatisch 1 Feile ab.")
-            st.session_state.feilen_bestand = st.number_input("Aktueller Feilenbestand im Studio (Stück):", min_value=0, value=st.session_state.feilen_bestand, step=1)
-            st.session_state.feilen_warnlimit = st.slider("Ab wie vielen verbleibenden Feilen möchtest du gewarnt werden?", min_value=1, max_value=40, value=st.session_state.feilen_warnlimit)
-            
             st.write("---")
-            if st.button("🛒 Neue Packung geöffnet (+20 Feilen)"):
-                st.session_state.feilen_bestand += 20
-                st.success("Bestand um 20 Stück aufgestockt!")
-                st.rerun()
+            st.markdown("<h4>➕ Neues Produkt ins Lager aufnehmen</h4>")
+            neu_prod = st.text_input("Produktname", placeholder="z.B. Farbgel Rot")
+            neu_ist = st.number_input("Aktueller Bestand", min_value=0, value=5)
+            neu_lim = st.number_input("Warnen ab (Limit)", min_value=0, value=1)
+            neu_auto = st.checkbox("Automatischer Abzug bei Buchung?", value=False)
+            if st.button("Produkt hinzufügen"):
+                if neu_prod:
+                    st.session_state.lager_bestand[neu_prod] = {"aktuell": neu_ist, "limit": neu_lim, "auto_abzug": neu_auto}
+                    st.success(f"{neu_prod} wurde hinzugefügt!")
+                    st.rerun()
+                
+        with col_lager:
+            st.markdown("<div class='card'><h4>📦 Lagerbestände & Warn-Einstellungen</h4></div>", unsafe_allow_html=True)
+            
+            for prod, daten in list(st.session_state.lager_bestand.items()):
+                st.write(f"##### 🏷️ {prod}")
+                c1, c2, c3 = st.columns(3)
+                
+                # Einstellungen direkt im UI anpassen
+                st.session_state.lager_bestand[prod]["aktuell"] = c1.number_input(f"Bestand ({prod})", min_value=0, value=daten["aktuell"], step=1, key=f"ist_{prod}")
+                st.session_state.lager_bestand[prod]["limit"] = c2.number_input(f"Warn-Limit ({prod})", min_value=0, value=daten["limit"], step=1, key=f"lim_{prod}")
+                st.session_state.lager_bestand[prod]["auto_abzug"] = c3.checkbox("Auto-Abzug bei Kunde", value=daten["auto_abzug"], key=f"aut_{prod}")
+                
+                if c1.button(f"Aufstocken (+10)##{prod}"):
+                    st.session_state.lager_bestand[prod]["aktuell"] += 10
+                    st.rerun()
+                st.write("---")
 
     # TAB 4: DOKUMENTE & QUITTUNGEN
     with menue[3]:
@@ -431,87 +464,27 @@ elif st.session_state.user == "Admin":
         with col_pdf_v:
             if 'pdf_view' in st.session_state: st.markdown(st.session_state.pdf_view, unsafe_allow_html=True)
 
-    # TAB 5: FINANZEN & ZEITEN
+    # TAB 5: FINANZEN & BUNTE DIAGRAMME (Neu gestaltet)
     with menue[4]:
-        st.subheader("📊 Studio-Statistiken & Finanzen")
-        st.markdown("### 🏆 Eure Behandlungsschlager (Live-Auswertung)")
-        if not st.session_state.termine.empty:
-            art_counts = st.session_state.termine["Typ"].value_counts()
-            cols_stats = st.columns(len(art_counts))
-            for idx, (art_name, count) in enumerate(art_counts.items()):
-                if idx < 4:
-                    cols_stats[idx].markdown(f"""
-                        <div class='stat-box'>
-                            <h2 style='margin:0; color:#d4af37;'>{count}x</h2>
-                            <span style='font-size:1.1em;'>{art_name}</span>
-                        </div>
-                    """, unsafe_allow_html=True)
-        else:
-            st.info("Sobald Termine gebucht werden, siehst du hier die Hits!")
+        st.subheader("📊 Studio-Statistiken & Bunte Finanzdiagramme")
+        
+        # OBERE METRIKEN
+        if not st.session_state.finanzen.empty:
+            einnahmen = st.session_state.finanzen[st.session_state.finanzen["Typ"] == "Einnahme"]["Betrag (€)"].sum()
+            ausgaben = st.session_state.finanzen[st.session_state.finanzen["Typ"] == "Ausgabe"]["Betrag (€)"].sum()
+            gewinn = einnahmen - ausgaben
             
+            c_m1, c_m2, c_m3 = st.columns(3)
+            c_m1.metric("Gesamteinnahmen", f"+ {einnahmen:.2f} €", delta_color="normal")
+            c_m2.metric("Gesamtausgaben", f"- {ausgaben:.2f} €", delta_color="inverse")
+            c_m3.metric("Reingewinn", f"{gewinn:.2f} €")
+        
         st.write("---")
-        col_f1, col_f2 = st.columns([1, 2])
+        col_f1, col_f2 = st.columns([1, 1])
+        
         with col_f1:
-            st.markdown("<h4>Hygiene-Puffer & Zeiten</h4>")
-            st.session_state.puffer_zeit = st.number_input("Pufferzeit zwischen Kunden (Minuten)", value=st.session_state.puffer_zeit, step=5)
-            st.write("---")
             st.markdown("<h4>Transaktion buchen</h4>", unsafe_allow_html=True)
             f_datum = st.date_input("Datum", datetime.date.today(), key="fin_d")
             f_typ = st.selectbox("Typ", ["Einnahme", "Ausgabe"])
-            f_kat = st.text_input("Kategorie", placeholder="z.B. Materialeinkauf")
-            f_betrag = st.number_input("Betrag in €", min_value=0.0)
-            if st.button("Eintrag Speichern"):
-                neuer_eintrag = pd.DataFrame([[f_datum, f_typ, f_kat, f_betrag]], columns=["Datum", "Typ", "Kategorie", "Betrag (€)"])
-                st.session_state.finanzen = pd.concat([st.session_state.finanzen, neuer_eintrag], ignore_index=True)
-                st.rerun()
-        with col_f2:
-            st.dataframe(st.session_state.finanzen, use_container_width=True)
-            if not st.session_state.finanzen.empty:
-                st.bar_chart(data=st.session_state.finanzen, x="Typ", y="Betrag (€)", color="Typ")
-
-# --- SEITE: KUNDEN-BUCHUNG ---
-else:
-    show_logo_and_header()
-    with st.sidebar:
-        st.write(f"🌸 Kundin: **{st.session_state.user}**")
-        st.write("---")
-        if st.session_state.user in st.session_state.kunden_liste:
-            k_info = st.session_state.kunden_liste[st.session_state.user]
-            st.write(f"☕ Dein Wunschgetränk:  \n*{k_info['Kaffee']}*")
-            
-        if st.button("Abmelden"):
-            st.session_state.user = None
-            st.rerun()
-            
-    st.subheader("🗓️ Wähle deinen Wunschtermin")
-    nagel_wunsch = st.selectbox("Was möchtest du machen lassen?", list(st.session_state.zeiten_naegel.keys()))
-    benoetigte_zeit = st.session_state.zeiten_naegel[nagel_wunsch]
-    gesamte_blockade_zeit = benoetigte_zeit + st.session_state.puffer_zeit
-    
-    st.info(f"Für {nagel_wunsch} werden {benoetigte_zeit} Minuten pure Wellness eingeplant.")
-    
-    freie_anzeige = st.session_state.freie_slots[st.session_state.freie_slots["Status"] == "Frei"]
-    if freie_anzeige.empty:
-        st.warning("Aktuell sind leider keine freien Termine freigeschaltet. Bitte schaue später noch einmal vorbei!")
-    else:
-        for idx, row in freie_anzeige.iterrows():
-            verfuegbare_minuten = int(row["Dauer_Minuten"])
-            if verfuegbare_minuten >= gesamte_blockade_zeit:
-                col_slot, col_buch_btn = st.columns([3, 1])
-                col_slot.write(f"📅 **{row['Datum']}** | ⏰ Von {row['Startzeit']} bis {row['Endzeit']} Uhr")
-                if col_buch_btn.button("Jetzt buchen", key=f"book_{idx}"):
-                    st.session_state.freie_slots.at[idx, "Status"] = "Gebucht"
-                    
-                    if st.session_state.feilen_bestand > 0:
-                        st.session_state.feilen_bestand -= 1
-                    
-                    kunden_farbe = "#721c24"
-                    if st.session_state.user in st.session_state.kunden_liste:
-                        kunden_farbe = st.session_state.kunden_liste[st.session_state.user]["Farbe"]
-                    
-                    neuer_termin = pd.DataFrame([[row['Datum'], row['Startzeit'], st.session_state.user, nagel_wunsch, gesamte_blockade_zeit, kunden_farbe]], 
-                                                columns=["Datum", "Uhrzeit", "Kunde", "Typ", "Dauer_Gesamt", "Farbe"])
-                    st.session_state.termine = pd.concat([st.session_state.termine, neuer_termin], ignore_index=True)
-                    st.success("Erfolgreich gebucht! Wir freuen uns auf dich! 🎉")
-                    st.rerun()
-                    
+            f_kat = st.selectbox("Kategorie",
+                                 
