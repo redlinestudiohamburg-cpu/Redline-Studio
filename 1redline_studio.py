@@ -486,5 +486,82 @@ elif st.session_state.user == "Admin":
             st.markdown("<h4>Transaktion buchen</h4>", unsafe_allow_html=True)
             f_datum = st.date_input("Datum", datetime.date.today(), key="fin_d")
             f_typ = st.selectbox("Typ", ["Einnahme", "Ausgabe"])
-            f_kat = st.selectbox("Kategorie",
-                                 
+            f_kat = st.selectbox("Kategorie", ["Neumodellage", "Auffüllen", "Design-Extra", "Materialeinkauf", "Miete/Strom", "Sonstiges"])
+            f_betrag = st.number_input("Betrag in €", min_value=0.0, step=5.0)
+            
+            if st.button("Eintrag Speichern"):
+                neuer_eintrag = pd.DataFrame([[f_datum.strftime('%Y-%m-%d'), f_typ, f_kat, f_betrag]], columns=["Datum", "Typ", "Kategorie", "Betrag (€)"])
+                st.session_state.finanzen = pd.concat([st.session_state.finanzen, neuer_eintrag], ignore_index=True)
+                st.rerun()
+                
+            st.write("---")
+            st.markdown("<h4>⏱️ Hygiene-Puffer</h4>")
+            st.session_state.puffer_zeit = st.number_input("Pufferzeit zwischen Kunden (Minuten)", value=st.session_state.puffer_zeit, step=5)
+            
+        with col_f2:
+            st.markdown("<h4>📈 Bunte Umsatz-Auswertungen</h4>", unsafe_allow_html=True)
+            if not st.session_state.finanzen.empty:
+                # 1. Diagramm: Einnahmen vs. Ausgaben Vergleich (Buntes Balkendiagramm)
+                st.write("**Umsatzverteilung nach Typ (Einnahmen vs. Ausgaben):**")
+                st.bar_chart(data=st.session_state.finanzen, x="Typ", y="Betrag (€)", color="Typ", use_container_width=True)
+                
+                # 2. Diagramm: Einnahmen aufgeteilt nach Kategorien (Super übersichtlich)
+                einnahmen_df = st.session_state.finanzen[st.session_state.finanzen["Typ"] == "Einnahme"]
+                if not einnahmen_df.empty:
+                    st.write("**Einnahmen-Quellen nach Kategorie:**")
+                    st.bar_chart(data=einnahmen_df, x="Kategorie", y="Betrag (€)", color="Kategorie", use_container_width=True)
+            else:
+                st.info("Tragt Transaktionen ein, um die bunten Charts zu füttern!")
+
+# --- SEITE: KUNDEN-BUCHUNG ---
+else:
+    show_logo_and_header()
+    with st.sidebar:
+        st.write(f"🌸 Kundin: **{st.session_state.user}**")
+        st.write("---")
+        if st.session_state.user in st.session_state.kunden_liste:
+            k_info = st.session_state.kunden_liste[st.session_state.user]
+            st.write(f"☕ Dein Wunschgetränk:  \n*{k_info['Kaffee']}*")
+            
+        if st.button("Abmelden"):
+            st.session_state.user = None
+            st.rerun()
+            
+    st.subheader("🗓️ Wähle deinen Wunschtermin")
+    nagel_wunsch = st.selectbox("Was möchtest du machen lassen?", list(st.session_state.zeiten_naegel.keys()))
+    benoetigte_zeit = st.session_state.zeiten_naegel[nagel_wunsch]
+    gesamte_blockade_zeit = benoetigte_zeit + st.session_state.puffer_zeit
+    
+    st.info(f"Für {nagel_wunsch} werden {benoetigte_zeit} Minuten pure Wellness eingeplant.")
+    
+    if "freie_slots" in st.session_state and not st.session_state.freie_slots.empty:
+        freie_anzeige = st.session_state.freie_slots[st.session_state.freie_slots["Status"] == "Frei"]
+    else:
+        freie_anzeige = pd.DataFrame()
+        
+    if freie_anzeige.empty:
+        st.warning("Aktuell sind leider keine freien Termine freigeschaltet. Bitte schaue später noch einmal vorbei!")
+    else:
+        for idx, row in freie_anzeige.iterrows():
+            verfuegbare_minuten = int(row["Dauer_Minuten"])
+            if verfuegbare_minuten >= gesamte_blockade_zeit:
+                col_slot, col_buch_btn = st.columns([3, 1])
+                col_slot.write(f"📅 **{row['Datum']}** | ⏰ Von {row['Startzeit']} bis {row['Endzeit']} Uhr")
+                if col_buch_btn.button("Jetzt buchen", key=f"book_{idx}"):
+                    st.session_state.freie_slots.at[idx, "Status"] = "Gebucht"
+                    
+                    # Automatischer Bestandsabzug für alle dafür markierten Produkte
+                    for prod, daten in st.session_state.lager_bestand.items():
+                        if daten["auto_abzug"] and daten["aktuell"] > 0:
+                            st.session_state.lager_bestand[prod]["aktuell"] -= 1
+                    
+                    kunden_farbe = "#721c24"
+                    if st.session_state.user in st.session_state.kunden_liste:
+                        kunden_farbe = st.session_state.kunden_liste[st.session_state.user]["Farbe"]
+                    
+                    neuer_termin = pd.DataFrame([[row['Datum'], row['Startzeit'], st.session_state.user, nagel_wunsch, gesamte_blockade_zeit, kunden_farbe]], 
+                                                columns=["Datum", "Uhrzeit", "Kunde", "Typ", "Dauer_Gesamt", "Farbe"])
+                    st.session_state.termine = pd.concat([st.session_state.termine, neuer_termin], ignore_index=True)
+                    st.success("Erfolgreich gebucht! Wir freuen uns auf dich! 🎉")
+                    st.rerun()
+                    
