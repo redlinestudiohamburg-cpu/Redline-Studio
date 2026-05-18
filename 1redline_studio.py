@@ -356,7 +356,7 @@ if st.session_state.user is None:
             with st.form(key="login_form_comprehensive", clear_on_submit=False):
                 st.markdown("##### Bitte Identität nachweisen oder Admin-Code eingeben")
                 passwort_verbergen = st.checkbox("🔒 Sicherheits-Modus aktivieren (Verdeckte Eingabe)", key="chk_sec_comp")
-                input_type = "password" if passwort_verbergen else "default"
+                input_type = "password" if passwort_verbergen else "text"
                 
                 name_eingabe = st.text_input(
                     "Dein vollständiger Name ODER Admin-Passwort *", 
@@ -587,12 +587,28 @@ elif st.session_state.user == "Admin":
             ausgewaehlter_kunde = st.selectbox("Kunden-Akte zur Bearbeitung öffnen:", list(st.session_state.kunden_liste.keys()))
             st.write("---")
             st.markdown("<h4>👤 Neue Kundin manuell anlegen</h4>", unsafe_allow_html=True)
+            
+            # OPTISCHE UMSTRUKTURIERUNG: Die geforderten Elemente rücken nach links!
             n_name = st.text_input("Vollständiger Name der Kundin")
+            
+            # 1. OPTISCHE ÄNDERUNG: Individuelle Kalenderfarbe nach links verschoben
+            manuelle_farbe = st.color_picker("🎨 Individuelle Kalenderfarbe zuweisen:", st.session_state.color_primary, key="manuelle_farbe_k_links")
+            
+            # 2. OPTISCHE ÄNDERUNG: Integrierte Foto-Galerie nach links verschoben
+            st.markdown("#### 🖼️ Integrierte Foto-Galerie (Modellagen & Fortschritt)")
+            hochgeladenes_foto_links = st.file_uploader(
+                "Neues Foto direkt aus der Studio-Kamera oder Ordner laden:", 
+                type=["jpg", "png", "jpeg", "webp", "gif", "JPG", "JPEG", "PNG", "WEBP", "GIF"], 
+                key="img_c_links_manuell"
+            )
+            
+            # Aktions-Button rückt nach ganz unten
             if st.button("Kundin manuell hinzufügen", use_container_width=True):
                 if n_name and n_name not in st.session_state.kunden_liste:
+                    linke_fotos = [hochgeladenes_foto_links] if hochgeladenes_foto_links else []
                     st.session_state.kunden_liste[n_name.strip()] = {
-                        "Telefon": "", "Farbe": st.session_state.color_primary, "Kaffee": "", "Allergien": "", "Notizen": "", 
-                        "Anamnese_Text": "Noch kein Befund eingetragen.", "DSGVO_Akzeptiert": False, "Fotos": []
+                        "Telefon": "", "Farbe": manuelle_farbe, "Kaffee": "", "Allergien": "", "Notizen": "", 
+                        "Anamnese_Text": "Noch kein Befund eingetragen.", "DSGVO_Akzeptiert": False, "Fotos": linke_fotos
                     }
                     st.success(f"Akte für '{n_name}' wurde erfolgreich angelegt!")
                     st.rerun()
@@ -612,28 +628,28 @@ elif st.session_state.user == "Admin":
                 st.markdown(f"*Studio-Leitfaden Fragen:*\n`{st.session_state.anamnese_vorlage}`")
                 akte["Anamnese_Text"] = st.text_area("Dein professioneller Anamnese-Befund für diese Kundin:", value=akte["Anamnese_Text"], height=150, key=f"anam_k_c_{ausgewaehlter_kunde}")
                 
+                # UNBERÜHRT: Die DSGVO Checkbox bleibt exakt auf der rechten Seite bestehen
                 akte["DSGVO_Akzeptiert"] = st.checkbox("Datenschutzerklärung (DSGVO) liegt physisch oder digital unterschrieben vor", value=akte["DSGVO_Akzeptiert"], key=f"dsgvo_k_c_{ausgewaehlter_kunde}")
-                akte["Farbe"] = st.color_picker("🎨 Individuelle Kalenderfarbe zuweisen:", akte["Farbe"], key=f"col_c_{ausgewaehlter_kunde}")
                 
                 st.write("---")
-                st.markdown("<h4>🖼️ Integrierte Foto-Galerie (Modellagen & Fortschritt)</h4>", unsafe_allow_html=True)
+                st.markdown("#### 🖼️ Aktuelle Fotos im Profil")
                 
-                # ERWEITERTER DATEIFILTER: Erkennt jetzt absolut jedes Format auf deinem Desktop!
-                hochgeladenes_foto = st.file_uploader(
-                    "Neues Foto direkt aus der Studio-Kamera oder Ordner laden:", 
+                # Falls in der Akte noch kein Datei-Uploader vorhanden ist für bestehende Konten, hier als Ergänzung
+                zusatz_foto = st.file_uploader(
+                    "Zusätzliches Foto an diese Akte anhängen:", 
                     type=["jpg", "png", "jpeg", "webp", "gif", "JPG", "JPEG", "PNG", "WEBP", "GIF"], 
-                    key=f"img_c_{ausgewaehlter_kunde}"
+                    key=f"img_zusatz_{ausgewaehlter_kunde}"
                 )
-                if hochgeladenes_foto:
-                    if st.button("Foto unwiderruflich in Kundenakte abspeichern", key=f"save_img_c_{ausgewaehlter_kunde}"):
-                        akte["Fotos"].append(hochgeladenes_foto)
-                        st.success("Bild wurde erfolgreich hochgeladen und der Akte angeheftet!")
+                if zusatz_foto:
+                    if st.button("Zusatzbild in Akte abspeichern", key=f"btn_save_zusatz_{ausgewaehlter_kunde}"):
+                        akte["Fotos"].append(zusatz_foto)
+                        st.success("Zusätzliches Bild angeheftet!")
                         st.rerun()
-                
+
                 if akte["Fotos"]:
                     cols_img = st.columns(3)
                     for idx, img in enumerate(akte["Fotos"]):
-                        cols_img[idx % 3].image(img, use_container_width=True, caption=f"Modellage vom {datetime.date.today().strftime('%d.%m.%Y')} (Bild {idx+1})")
+                        cols_img[idx % 3].image(img, use_container_width=True, caption=f"Modellage (Bild {idx+1})")
                 st.markdown("</div>", unsafe_allow_html=True)
 
     # --------------------------------------------------------------------------
@@ -728,7 +744,7 @@ elif st.session_state.user == "Admin":
             mat_preis = st.number_input("Bisheriger Richtpreis (€):", min_value=0.0, value=14.95, step=0.5)
             mat_notiz = st.text_area("Hersteller-Infos / Bezugsquelle / Artikelnummer:")
             
-            # ERWEITERTER DATEIFILTER AUCH HIER: Desktop bleibt niemals leer!
+            # Explorer-Filter auf Groß-/Kleinschreibung angepasst
             mat_foto = st.file_uploader(
                 "Produktbild hinterlegen:", 
                 type=["jpg", "png", "jpeg", "webp", "gif", "JPG", "JPEG", "PNG", "WEBP", "GIF"], 
@@ -948,7 +964,7 @@ elif st.session_state.user == "Admin":
         with col_up1:
             st.markdown("### 👑 Foto-Upload: Dein Studio-Logo")
             
-            # ERWEITERTER DATEIFILTER: Keine leeren Ordner mehr auf dem PC!
+            # Filter komplett für Groß- und Kleinschreibung konfiguriert
             uploaded_logo_file = st.file_uploader(
                 "Wähle dein Logo-Bild von deinem Gerät aus 📸", 
                 type=["jpg", "png", "jpeg", "webp", "gif", "JPG", "JPEG", "PNG", "WEBP", "GIF"], 
@@ -961,7 +977,7 @@ elif st.session_state.user == "Admin":
         with col_up2:
             st.markdown("### 🖼️ Foto-Upload: Dein App-Hintergrund")
             
-            # ERWEITERTER DATEIFILTER: Erkennt jetzt jedes Foto im Verzeichnis!
+            # Filter komplett für Groß- und Kleinschreibung konfiguriert
             uploaded_bg_file = st.file_uploader(
                 "Wähle dein tolles Rosé-Hintergrundbild aus ✨", 
                 type=["jpg", "png", "jpeg", "webp", "gif", "JPG", "JPEG", "PNG", "WEBP", "GIF"], 
@@ -1082,3 +1098,4 @@ else:
                     
                     st.success("🎉 Deine Terminanfrage wurde erfolgreich an das Studio übermittelt! Sobald das Studio den Termin geprüft und freigegeben hat, siehst du ihn als bestätigt.")
                     st.rerun()
+                    
