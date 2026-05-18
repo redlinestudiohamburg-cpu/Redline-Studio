@@ -10,89 +10,63 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# 🌐 DEIN REINER LOGO-DIREKTLINK:
-LOGO_URL = "https://i.ibb.co/L5rCByH/1000083359.png"
+# LOGO-LINK
+LOGO_URL = "https://i.ibb.co/6w2fR6V/1000083367.jpg"
 
-# --- DESIGN & STYLE (Weinrot & Gold) ---
+# --- INITIALISIERUNG DER DATEN-SPEICHER ---
+if 'user' not in st.session_state: st.session_state.user = None
+if 'zeiten_naegel' not in st.session_state:
+    st.session_state.zeiten_naegel = {"Neumodellage": 120, "Auffüllen": 90, "French / Extra Design": 45}
+if 'puffer_zeit' not in st.session_state: st.session_state.puffer_zeit = 20
+
+# Schwarzes Brett
+if 'studio_news' not in st.session_state:
+    st.session_state.studio_news = "✨ Willkommen im Redline Studio! Ab sofort über 20 neue Chrome-Pigmente verfügbar! ✨"
+if 'news_aktiv' not in st.session_state:
+    st.session_state.news_aktiv = True
+
+# Material-Warner
+if 'feilen_bestand' not in st.session_state:
+    st.session_state.feilen_bestand = 20  
+if 'feilen_warnlimit' not in st.session_state:
+    st.session_state.feilen_warnlimit = 5  
+
+# Erweiterte Kundenstruktur mit Fokus auf Risiken
+if 'kunden_liste' not in st.session_state:
+    st.session_state.kunden_liste = {
+        "Beispiel Kundin": {
+            "Telefon": "+49 123 456789", "Farbe": "#721c24", 
+            "Kaffee": "Cappuccino mit Hafermilch", "Risiken": "Allergie gegen bestimmte Inhaltsstoffe", "Notizen": "Bevorzugt mattes Finish", "Fotos": []
+        }
+    }
+
+if 'freie_slots' not in st.session_state: st.session_state.freie_slots = pd.DataFrame(columns=["Datum", "Startzeit", "Endzeit", "Dauer_Minuten", "Feiertag-Hinweis", "Status"])
+if 'termine' not in st.session_state: st.session_state.termine = pd.DataFrame(columns=["Datum", "Uhrzeit", "Kunde", "Typ", "Dauer_Gesamt", "Farbe"])
+if 'finanzen' not in st.session_state: st.session_state.finanzen = pd.DataFrame(columns=["Datum", "Typ", "Kategorie", "Betrag (€)"])
+
+# --- DESIGN & STYLE ---
 st.markdown("""
     <style>
-    .stApp {
-        background-color: #ffffff;
-        color: #333333;
-    }
+    .stApp { background-color: #ffffff; color: #333333; }
     .main-header {
-        background-color: #721c24;
-        padding: 30px;
-        border-radius: 10px;
-        text-align: center;
-        margin-bottom: 30px;
-        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        gap: 25px;
+        background-color: #721c24; padding: 25px; border-radius: 15px; text-align: center;
+        margin-bottom: 20px; box-shadow: 0 6px 12px rgba(0,0,0,0.15);
+        display: flex; align-items: center; justify-content: center; gap: 25px;
     }
-    .main-header h1 {
-        color: #d4af37 !important;
-        font-family: 'Playfair Display', serif;
-        font-size: 3rem;
-        margin: 0;
-    }
-    .main-header p {
-        color: #f8f9fa;
-        font-size: 1.2rem;
-        font-style: italic;
-        margin-top: 5px;
-    }
-    .main-logo-img {
-        max-height: 90px;
-        border-radius: 50%;
-        border: 2px solid #d4af37;
-    }
-    .stButton>button {
-        background-color: #721c24 !important;
-        color: #d4af37 !important;
-        border: 2px solid #d4af37 !important;
-        border-radius: 8px !important;
-        font-weight: bold !important;
-        transition: all 0.3s ease;
-    }
-    .stButton>button:hover {
-        background-color: #d4af37 !important;
-        color: #721c24 !important;
-        transform: scale(1.02);
-    }
-    .card {
-        background-color: #f8f9fa;
-        padding: 20px;
-        border-radius: 8px;
-        border-left: 5px solid #721c24;
-        margin-bottom: 20px;
-    }
-    .holiday-text {
-        color: #721c24;
-        font-weight: bold;
-        background-color: #f8d7da;
-        padding: 8px;
-        border-radius: 5px;
-        display: block;
-        margin-bottom: 15px;
-    }
-    .calendar-box {
-        border: 1px solid #721c24;
-        padding: 10px;
-        border-radius: 5px;
-        margin-bottom: 5px;
-        color: white;
-    }
-    .pdf-frame {
-        border: 2px solid #721c24;
-        padding: 20px;
-        background-color: white;
-        color: black;
-        font-family: 'Courier New', monospace;
-        line-height: 1.4;
-    }
+    .main-header h1 { color: #d4af37 !important; font-family: 'Playfair Display', serif; font-size: 3.2rem; margin: 0; }
+    .main-header p { color: #f8f9fa; font-size: 1.3rem; font-style: italic; margin-top: 5px; }
+    .main-logo-img { max-height: 100px; border-radius: 12px; border: 2px solid #d4af37; }
+    .news-banner { background-color: #721c24; color: #d4af37; border: 2px solid #d4af37; padding: 15px; border-radius: 10px; text-align: center; font-size: 1.2rem; font-weight: bold; margin-bottom: 25px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+    .material-alert { background-color: #fff3cd; color: #856404; border: 2px solid #ffeeba; padding: 15px; border-radius: 8px; font-weight: bold; margin-bottom: 20px; }
+    .risiko-alert { background-color: #f8d7da; color: #721c24; border: 2px solid #f5c6cb; padding: 15px; border-radius: 8px; font-weight: bold; margin-bottom: 20px; font-size: 1.1rem; }
+    .stButton>button { background-color: #721c24 !important; color: #d4af37 !important; border: 2px solid #d4af37 !important; border-radius: 8px !important; font-weight: bold !important; transition: all 0.3s ease; }
+    .stButton>button:hover { background-color: #d4af37 !important; color: #721c24 !important; transform: scale(1.02); }
+    .card { background-color: #f8f9fa; padding: 20px; border-radius: 8px; border-left: 5px solid #721c24; margin-bottom: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+    .kunden-akte { background-color: #fffdf9; padding: 25px; border-radius: 12px; border: 1px solid #d4af37; margin-top: 15px; }
+    .stat-box { background-color: #721c24; color: white; padding: 15px; border-radius: 8px; text-align: center; border-bottom: 4px solid #d4af37; }
+    .holiday-text { color: #721c24; font-weight: bold; background-color: #f8d7da; padding: 8px; border-radius: 5px; display: block; margin-bottom: 15px; }
+    .calendar-box { border: 1px solid #721c24; padding: 12px; border-radius: 8px; margin-bottom: 8px; color: white; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+    .pdf-frame { border: 2px solid #721c24; padding: 25px; background-color: white; color: black; font-family: 'Courier New', monospace; line-height: 1.4; box-shadow: 0 4px 8px rgba(0,0,0,0.1); }
     </style>
 """, unsafe_allow_html=True)
 
@@ -100,52 +74,25 @@ st.markdown("""
 def get_feiertag(datum):
     jahr = datum.year
     feste = {
-        (1, 1): "Neujahr",
-        (6, 1): "Heilige Drei Könige",
-        (1, 5): "Tag der Arbeit",
-        (1, 8): "Schweizer Nationalfeiertag",
-        (3, 10): "Tag der Deutschen Einheit",
-        (26, 10): "Nationalfeiertag (AT)",
-        (1, 11): "Allerheiligen",
-        (25, 12): "1. Weihnachtstag",
-        (26, 12): "2. Weihnachtstag"
+        (1, 1): "Neujahr", (6, 1): "Heilige Drei Könige", (1, 5): "Tag der Arbeit",
+        (1, 8): "Schweizer Nationalfeiertag", (3, 10): "Tag der Deutschen Einheit",
+        (26, 10): "Nationalfeiertag (AT)", (1, 11): "Allerheiligen",
+        (25, 12): "1. Weihnachtstag", (26, 12): "2. Weihnachtstag"
     }
-    a = jahr % 19
-    b = jahr % 4
-    c = jahr % 7
+    a, b, c = jahr % 19, jahr % 4, jahr % 7
     d = (19 * a + 24) % 30
     e = (2 * b + 4 * c + 6 * d + 5) % 7
     oster_tage = 22 + d + e
-    if oster_tage > 31:
-        oster_datum = datetime.date(jahr, 4, oster_tage - 31)
-    else:
-        oster_datum = datetime.date(jahr, 3, oster_tage)
-    karfreitag = oster_datum - datetime.timedelta(days=2)
-    ostermontag = oster_datum + datetime.timedelta(days=1)
-    auffahrt = oster_datum + datetime.timedelta(days=39)
-    pfingstmontag = oster_datum + datetime.timedelta(days=50)
+    oster_datum = datetime.date(jahr, 4, oster_tage - 31) if oster_tage > 31 else datetime.date(jahr, 3, oster_tage)
     
-    if datum == karfreitag: return "Karfreitag"
+    if datum == oster_datum - datetime.timedelta(days=2): return "Karfreitag"
     if datum == oster_datum: return "Ostersonntag"
-    if datum == ostermontag: return "Ostermontag"
-    if datum == auffahrt: return "Auffahrt / Himmelfahrt"
-    if datum == pfingstmontag: return "Pfingstmontag"
-    if (datum.day, datum.month) in feste:
-        return feste[(datum.day, datum.month)]
+    if datum == oster_datum + datetime.timedelta(days=1): return "Ostermontag"
+    if datum == oster_datum + datetime.timedelta(days=39): return "Auffahrt / Himmelfahrt"
+    if datum == oster_datum + datetime.timedelta(days=50): return "Pfingstmontag"
+    if (datum.day, datum.month) in feste: return feste[(datum.day, datum.month)]
     return None
 
-# --- INITIALISIERUNG DER DATEN-SPEICHER ---
-if 'user' not in st.session_state: st.session_state.user = None
-if 'zeiten_naegel' not in st.session_state:
-    st.session_state.zeiten_naegel = {"Neumodellage": 120, "Auffüllen": 90, "French / Extra Design": 45}
-if 'puffer_zeit' not in st.session_state: st.session_state.puffer_zeit = 15
-if 'kunden_spalten' not in st.session_state: st.session_state.kunden_spalten = ["Kunden-Name", "Telefonnummer", "Notizen", "Farbe"]
-if 'kunden' not in st.session_state: st.session_state.kunden = pd.DataFrame(columns=st.session_state.kunden_spalten)
-if 'freie_slots' not in st.session_state: st.session_state.freie_slots = pd.DataFrame(columns=["Datum", "Startzeit", "Endzeit", "Dauer_Minuten", "Feiertag-Hinweis", "Status"])
-if 'termine' not in st.session_state: st.session_state.termine = pd.DataFrame(columns=["Datum", "Uhrzeit", "Kunde", "Typ", "Dauer_Gesamt", "Farbe"])
-if 'finanzen' not in st.session_state: st.session_state.finanzen = pd.DataFrame(columns=["Datum", "Typ", "Kategorie", "Betrag (€)"])
-
-# --- FUNKTION: DYNAMISCHER HEADER MIT LOGO ---
 def show_logo_and_header():
     st.markdown(f"""
         <div class='main-header'>
@@ -156,6 +103,9 @@ def show_logo_and_header():
             </div>
         </div>
     """, unsafe_allow_html=True)
+    
+    if st.session_state.news_aktiv and st.session_state.studio_news:
+        st.markdown(f"<div class='news-banner'>📢 {st.session_state.studio_news}</div>", unsafe_allow_html=True)
 
 # --- STARTSEITE: KUNDEN-LOGIN ---
 if st.session_state.user is None:
@@ -173,19 +123,37 @@ if st.session_state.user is None:
                 st.rerun()
             else:
                 st.session_state.user = name_eingabe.strip()
+                if st.session_state.user not in st.session_state.kunden_liste:
+                    st.session_state.kunden_liste[st.session_state.user] = {
+                        "Telefon": "", "Farbe": "#721c24", "Kaffee": "Noch unbekannt", "Risiken": "Keine", "Notizen": "", "Fotos": []
+                    }
                 st.rerun()
 
 # --- BEREICH: ADMIN-DASHBOARD ---
 elif st.session_state.user == "Admin":
     show_logo_and_header()
     
+    if st.session_state.feilen_bestand <= st.session_state.feilen_warnlimit:
+        st.markdown(f"""
+            <div class='material-alert'>
+                ⚠️ MATERIAL-WARNUNG: Der Bestand an Nagelfeilen ist kritisch! <br>
+                Aktueller Vorrat: {st.session_state.feilen_bestand} Stück (Eingestelltes Limit: ab {st.session_state.feilen_warnlimit} Stück warnen).
+            </div>
+        """, unsafe_allow_html=True)
+    
     with st.sidebar:
-        st.write(f"Angemeldet als: **{st.session_state.user}**")
+        st.write(f"💼 Modus: **{st.session_state.user}**")
+        st.write("---")
+        heute_str = datetime.date.today().strftime('%Y-%m-%d')
+        termine_heute = len(st.session_state.termine[st.session_state.termine["Datum"] == heute_str]) if not st.session_state.termine.empty else 0
+        st.metric(label="Termine heute", value=termine_heute)
+        st.metric(label="Feilen übrig", value=f"{st.session_state.feilen_bestand} Stk.")
+        
         if st.button("Abmelden", use_container_width=True):
             st.session_state.user = None
             st.rerun()
             
-    menue = st.tabs(["🗓️ Kalender & Slots", "⚙️ Nagel-Zeiten & Puffer", "👥 Kundenkartei", "📄 Dokumente & Quittungen", "📊 Finanzen"])
+    menue = st.tabs(["🗓️ Kalender & Slots", "👥 Digitale Luxus-Kartei", "📢 Schwarzes Brett & Lager", "📄 Dokumente & Quittungen", "📊 Finanzen & Zeiten"])
     
     # TAB 1: KALENDER & ARBEITSZEITEN
     with menue[0]:
@@ -217,7 +185,7 @@ elif st.session_state.user == "Admin":
                     st.rerun()
             
             st.write("---")
-            st.dataframe(st.session_state.freie_slots, use_container_width=True)
+            st.dataframe(st.freie_slots, use_container_width=True)
             if st.button("Alle Slots zurücksetzen"):
                 st.session_state.freie_slots = pd.DataFrame(columns=["Datum", "Startzeit", "Endzeit", "Dauer_Minuten", "Feiertag-Hinweis", "Status"])
                 st.rerun()
@@ -230,13 +198,7 @@ elif st.session_state.user == "Admin":
             st.write("### Termine in der Übersicht:")
             if not st.session_state.termine.empty:
                 st.session_state.termine["Datum_Parsed"] = pd.to_datetime(st.session_state.termine["Datum"]).dt.date
-                if view_mode == "Tag":
-                    aktuelle_termine = st.session_state.termine[st.session_state.termine["Datum_Parsed"] == wahl_datum]
-                else:
-                    aktuelle_termine = st.session_state.termine[
-                        (pd.to_datetime(st.session_state.termine["Datum"]).dt.month == wahl_datum.month) & 
-                        (pd.to_datetime(st.session_state.termine["Datum"]).dt.year == wahl_datum.year)
-                    ]
+                aktuelle_termine = st.session_state.termine[st.session_state.termine["Datum_Parsed"] == wahl_datum] if view_mode == "Tag" else st.session_state.termine[(pd.to_datetime(st.session_state.termine["Datum"]).dt.month == wahl_datum.month) & (pd.to_datetime(st.session_state.termine["Datum"]).dt.year == wahl_datum.year)]
             else:
                 aktuelle_termine = pd.DataFrame()
                 
@@ -252,127 +214,163 @@ elif st.session_state.user == "Admin":
                             💅 Behandlung: {t['Typ']} ({t['Dauer_Gesamt']} Min. inkl. Puffer)
                         </div>
                     """, unsafe_allow_html=True)
+                    txt_msg = f"Hallo {t['Kunde']}, ich freue mich auf unseren Nagel-Termin am {t['Datum']} um {t['Uhrzeit']} Uhr im Redline Studio! 💅"
+                    st.text_area("📋 Fertiger WhatsApp-Text zum Kopieren:", value=txt_msg, height=70, key=f"wa_{t['Kunde']}_{t['Uhrzeit']}")
 
-    # TAB 2: NAGEL-ZEITEN & NEUE ARTEN
+    # TAB 2: DIGITALE LUXUS-KARTEI (Mit Risiko-Warnung)
     with menue[1]:
-        st.subheader("⚙️ Behandlungsdauer & Nagel-Arten verwalten")
-        col_z1, col_z2 = st.columns(2)
-        with col_z1:
-            st.markdown("<div class='card'><h4>➕ Neue Nagel-Art hinzufügen</h4></div>", unsafe_allow_html=True)
-            neue_art_name = st.text_input("Name der neuen Behandlung", placeholder="z.B. Acryl Verlängerung")
-            neue_art_dauer = st.number_input("Dauer in Minuten", min_value=5, value=60, step=5)
-            
-            if st.button("💅 Neue Behandlung speichern", use_container_width=True):
-                if neue_art_name:
-                    st.session_state.zeiten_naegel[neue_art_name.strip()] = neue_art_dauer
-                    st.success(f"'{neue_art_name}' wurde hinzugefügt!")
+        st.subheader("👥 Redline Premium Kundenkartei")
+        col_k_liste, col_k_akte = st.columns([1, 2])
+        
+        with col_k_liste:
+            ausgewaehlter_kunde = st.selectbox("Kunden-Akte öffnen:", list(st.session_state.kunden_liste.keys()))
+            st.write("---")
+            st.markdown("<h4>👤 Neue Kundin manuell anlegen</h4>")
+            n_name = st.text_input("Name der Kundin")
+            if st.button("Kundin in Kartei aufnehmen", use_container_width=True):
+                if n_name and n_name not in st.session_state.kunden_liste:
+                    st.session_state.kunden_liste[n_name.strip()] = {"Telefon": "", "Farbe": "#721c24", "Kaffee": "", "Risiken": "Keine", "Notizen": "", "Fotos": []}
+                    st.success("Kundin angelegt!")
                     st.rerun()
-            
-            st.write("### Aktuell verfügbare Behandlungen:")
-            for art, dauer in list(st.session_state.zeiten_naegel.items()):
-                st.session_state.zeiten_naegel[art] = st.number_input(f"Dauer für: {art} (Min)", value=int(dauer), step=5, key=f"edit_{art}")
-        with col_z2:
-            st.markdown("<div class='card'><h4>🧼 Desinfektion & Aufbereitung</h4></div>", unsafe_allow_html=True)
-            st.session_state.puffer_zeit = st.number_input("Pufferzeit zwischen Kunden (Minuten)", value=st.session_state.puffer_zeit, step=5)
+                    
+        with col_k_akte:
+            if ausgewaehlter_kunde:
+                akte = st.session_state.kunden_liste[ausgewaehlter_kunde]
+                
+                # WUNSCH-FUNKTION: Rote Warnung ganz oben, wenn Risiken eingetragen sind
+                if "Risiken" in akte and akte["Risiken"] != "" and akte["Risiken"].lower() != "keine":
+                    st.markdown(f"""
+                        <div class='risiko-alert'>
+                            ⚠️ ACHTUNG - WICHTIGE RISIKEN BEI {ausgewaehlter_kunde.upper()}:<br>
+                            {akte["Risiken"]}
+                        </div>
+                    """, unsafe_allow_html=True)
+                
+                st.markdown(f"<div class='kunden-akte'><h3>👑 VIP Akte: {ausgewaehlter_kunde}</h3>", unsafe_allow_html=True)
+                akte["Telefon"] = st.text_input("📞 Telefonnummer:", akte["Telefon"])
+                akte["Kaffee"] = st.text_input("☕ Kaffee- / Getränkevorliebe:", akte["Kaffee"])
+                akte["Risiken"] = st.text_input("⚠️ Bekannte Risiken / Besonderheiten:", akte["Risiken"])
+                akte["Notizen"] = st.text_area("📝 Besondere Design-Wünsche & Notizen:", akte["Notizen"])
+                akte["Farbe"] = st.color_picker("🎨 Eigene Kalender-Farbe für diese Kundin:", akte["Farbe"])
+                
+                st.write("---")
+                st.markdown("<h4>🖼️ Foto-Galerie</h4>", unsafe_allow_html=True)
+                hochgeladenes_foto = st.file_uploader("Neues Foto hochladen:", type=["jpg", "png", "jpeg"], key=f"img_{ausgewaehlter_kunde}")
+                if hochgeladenes_foto:
+                    if st.button("Foto in Akte speichern"):
+                        akte["Fotos"].append(hochgeladenes_foto)
+                        st.success("Bild hinzugefügt!")
+                        st.rerun()
+                
+                if akte["Fotos"]:
+                    cols_img = st.columns(3)
+                    for idx, img in enumerate(akte["Fotos"]):
+                        cols_img[idx % 3].image(img, use_container_width=True, caption=f"Modellage {idx+1}")
+                st.markdown("</div>", unsafe_allow_html=True)
 
-    # TAB 3: KUNDENKARTEI
+    # TAB 3: SCHWARZES BRETT & INTELLIGENTES LAGER
     with menue[2]:
-        st.subheader("👥 Digitale Kundenkartei (Erweiterbar)")
-        col_k_form, col_k_view = st.columns([1, 2])
-        with col_k_form:
-            st.markdown("<div class='card'><h4>➕ Neue Tabellen-Spalte hinzufügen</h4></div>", unsafe_allow_html=True)
-            neue_spalte = st.text_input("Name für neues Datenfeld", placeholder="z.B. Instagram, Allergien")
-            if st.button("➕ Spalte der Kartei hinzufügen", use_container_width=True):
-                if neue_spalte and neue_spalte not in st.session_state.kunden_spalten:
-                    st.session_state.kunden_spalten.append(neue_spalte.strip())
-                    st.session_state.kunden[neue_spalte.strip()] = ""
-                    st.success(f"Spalte '{neue_spalte}' hinzugefügt!")
-                    st.rerun()
+        st.subheader("📢 Studio-Management & Material-Warner")
+        col_board, col_lager = st.columns(2)
+        
+        with col_board:
+            st.markdown("<div class='card'><h4>📢 Digitales Schwarzes Brett konfigurieren</h4></div>", unsafe_allow_html=True)
+            st.session_state.news_aktiv = st.checkbox("Schwarzes Brett für Kunden sichtbar schalten", value=st.session_state.news_aktiv)
+            st.session_state.studio_news = st.text_area("Aushang-Text (wird ganz oben für Kunden eingeblendet):", value=st.session_state.studio_news)
+            if st.button("Aushang aktualisieren"):
+                st.success("Das Schwarze Brett wurde live aktualisiert!")
+                st.rerun()
+                
+        with col_lager:
+            st.markdown("<div class='card'><h4>📦 Intelligenter Nagelfeilen-Warner</h4></div>", unsafe_allow_html=True)
+            st.write("Das System zieht bei jeder erfolgreichen Kundenbuchung vollautomatisch 1 Feile ab.")
+            st.session_state.feilen_bestand = st.number_input("Aktueller Feilenbestand im Studio (Stück):", min_value=0, value=st.session_state.feilen_bestand, step=1)
+            st.session_state.feilen_warnlimit = st.slider("Ab wie vielen verbleibenden Feilen möchtest du gewarnt werden?", min_value=1, max_value=40, value=st.session_state.feilen_warnlimit)
             
             st.write("---")
-            st.markdown("<div class='card'><h4>👤 Neuen Kunden anlegen</h4></div>", unsafe_allow_html=True)
-            kunden_daten = {}
-            for spalte in st.session_state.kunden_spalten:
-                if spalte == "Farbe":
-                    kunden_daten[spalte] = st.color_picker("🎨 Erkennungs-Farbe für Kalender", "#721c24")
-                elif spalte == "Notizen":
-                    kunden_daten[spalte] = st.text_area(spalte)
-                else:
-                    kunden_daten[spalte] = st.text_input(spalte)
-                    
-            if st.button("Kunde abspeichern", use_container_width=True):
-                if kunden_daten.get("Kunden-Name") == "":
-                    st.error("Bitte mindestens den Kunden-Namen eingeben!")
-                else:
-                    neuer_kunde = pd.DataFrame([kunden_daten], columns=st.session_state.kunden_spalten)
-                    st.session_state.kunden = pd.concat([st.session_state.kunden, neuer_kunde], ignore_index=True)
-                    st.success("Kunde erfolgreich gesichert!")
-                    st.rerun()
-        with col_k_view:
-            st.dataframe(st.session_state.kunden, use_container_width=True)
+            if st.button("🛒 Neue Packung geöffnet (+20 Feilen)"):
+                st.session_state.feilen_bestand += 20
+                st.success("Bestand um 20 Stück aufgestockt!")
+                st.rerun()
 
-    # TAB 4: DOKUMENTE & QUITTUNGEN (Mit Logo!)
+    # TAB 4: DOKUMENTE & QUITTUNGEN
     with menue[3]:
         st.subheader("📄 Professionelle Dokumente erstellen")
         col_pdf_f, col_pdf_v = st.columns([1, 2])
         with col_pdf_f:
             st.markdown("<div class='card'><h4>Dokumenten-Konfigurator</h4></div>", unsafe_allow_html=True)
-            if st.session_state.kunden.empty:
-                st.warning("Keine Kunden in der Kartei!")
-            else:
-                doc_kunde = st.selectbox("Wähle einen Kunden:", st.session_state.kunden["Kunden-Name"])
-                doc_art = st.selectbox("Behandlung:", list(st.session_state.zeiten_naegel.keys()))
-                doc_datum = st.date_input("Datum", datetime.date.today())
-                doc_preis = st.number_input("Beitrag in €", min_value=0.0, step=0.5)
-                doc_typ = st.radio("Dokumententyp:", ["Professionelle Quittung", "Einverständniserklärung"], horizontal=True)
-                
-                if st.button("Dokument generieren", use_container_width=True):
-                    logo_html = f"<img src='{LOGO_URL}' style='max-height: 60px; float: right; border-radius: 50%;' onerror='this.style.display=\"none\"'>"
-                    if doc_typ == "Professionelle Quittung":
-                        st.session_state.pdf_view = f"""
-                            <div class='pdf-frame'>
-                                {logo_html}
-                                <h1 style='color: #721c24; margin:0;'>Redline Studio</h1>
-                                <hr>
-                                <h2 style='text-align: center;'>QUITTUNG / RECHNUNG</h2>
-                                <p><strong>Datum:</strong> {doc_datum.strftime('%d.%m.%Y')}</p>
-                                <p><strong>Kunde:</strong> {doc_kunde}</p>
-                                <p><strong>Leistung:</strong> {doc_art}</p>
-                                <h3 style='text-align: right; border-top: 2px solid #333; padding-top:10px;'>Gesamtbetrag erhalten: {doc_preis:.2f} €</h3>
-                                <p style='font-style: italic; font-size: 0.9em; margin-top:30px;'>Vielen Dank für deinen Besuch!<br>Es gilt die Kleinunternehmerregelung (§ 19 UStG).</p>
+            doc_kunde = st.selectbox("Wähle einen Kunden:", list(st.session_state.kunden_liste.keys()), key="doc_k")
+            doc_art = st.selectbox("Behandlung:", list(st.session_state.zeiten_naegel.keys()), key="doc_a")
+            doc_datum = st.date_input("Datum", datetime.date.today(), key="doc_d")
+            doc_preis = st.number_input("Beitrag in €", min_value=0.0, step=0.5)
+            doc_typ = st.radio("Dokumententyp:", ["Professionelle Quittung", "Einverständniserklärung"], horizontal=True)
+            
+            if st.button("Dokument generieren", use_container_width=True):
+                logo_html = f"<img src='{LOGO_URL}' style='max-height: 60px; float: right; border-radius: 8px;' onerror='this.style.display=\"none\"'>"
+                if doc_typ == "Professionelle Quittung":
+                    st.session_state.pdf_view = f"""
+                        <div class='pdf-frame'>
+                            {logo_html}
+                            <h1 style='color: #721c24; margin:0;'>Redline Studio</h1>
+                            <hr>
+                            <h2 style='text-align: center;'>QUITTUNG / RECHNUNG</h2>
+                            <p><strong>Datum:</strong> {doc_datum.strftime('%d.%m.%Y')}</p>
+                            <p><strong>Kunde:</strong> {doc_kunde}</p>
+                            <p><strong>Leistung:</strong> {doc_art}</p>
+                            <h3 style='text-align: right; border-top: 2px solid #333; padding-top:10px;'>Gesamtbetrag erhalten: {doc_preis:.2f} €</h3>
+                            <p style='font-style: italic; font-size: 0.9em; margin-top:30px;'>Vielen Dank für deinen Besuch!<br>Es gilt die Kleinunternehmerregelung (§ 19 UStG).</p>
+                        </div>
+                    """
+                else:
+                    st.session_state.pdf_view = f"""
+                        <div class='pdf-frame'>
+                            {logo_html}
+                            <h1 style='color: #721c24; margin:0;'>Redline Studio</h1>
+                            <hr>
+                            <h2 style='text-align: center;'>Einverständniserklärung & Protokoll</h2>
+                            <p><strong>Datum:</strong> {doc_datum.strftime('%d.%m.%Y')}</p>
+                            <p><strong>Kunde:</strong> {doc_kunde}</p>
+                            <p><strong>Behandlung:</strong> {doc_art}</p>
+                            <p style='margin-top:20px;'>Ich wurde über die Behandlung, Risiken und die Nachpflege aufgeklärt und stimme zu.</p>
+                            <br><br>
+                            <div style='display: flex; justify-content: space-between; margin-top:40px;'>
+                                <div>_____________________<br><span style='font-size: 0.8em;'>Unterschrift Kunde</span></div>
+                                <div>_____________________<br><span style='font-size: 0.8em;'>Unterschrift Studio</span></div>
                             </div>
-                        """
-                    else:
-                        st.session_state.pdf_view = f"""
-                            <div class='pdf-frame'>
-                                {logo_html}
-                                <h1 style='color: #721c24; margin:0;'>Redline Studio</h1>
-                                <hr>
-                                <h2 style='text-align: center;'>Einverständniserklärung & Protokoll</h2>
-                                <p><strong>Datum:</strong> {doc_datum.strftime('%d.%m.%Y')}</p>
-                                <p><strong>Kunde:</strong> {doc_kunde}</p>
-                                <p><strong>Behandlung:</strong> {doc_art}</p>
-                                <p style='margin-top:20px;'>Ich wurde über die Behandlung, Risiken und die Nachpflege aufgeklärt und stimme zu.</p>
-                                <br><br>
-                                <div style='display: flex; justify-content: space-between; margin-top:40px;'>
-                                    <div>_____________________<br><span style='font-size: 0.8em;'>Unterschrift Kunde</span></div>
-                                    <div>_____________________<br><span style='font-size: 0.8em;'>Unterschrift Studio</span></div>
-                                </div>
-                            </div>
-                        """
-                    st.rerun()
+                        </div>
+                    """
+                st.rerun()
         with col_pdf_v:
-            if 'pdf_view' in st.session_state:
-                st.markdown(st.session_state.pdf_view, unsafe_allow_html=True)
+            if 'pdf_view' in st.session_state: st.markdown(st.session_state.pdf_view, unsafe_allow_html=True)
 
-    # TAB 5: FINANZEN
+    # TAB 5: FINANZEN & ZEITEN
     with menue[4]:
-        st.subheader("📊 Finanzen")
+        st.subheader("📊 Studio-Statistiken & Finanzen")
+        st.markdown("### 🏆 Eure Behandlungsschlager (Live-Auswertung)")
+        if not st.session_state.termine.empty:
+            art_counts = st.session_state.termine["Typ"].value_counts()
+            cols_stats = st.columns(len(art_counts))
+            for idx, (art_name, count) in enumerate(art_counts.items()):
+                if idx < 4:
+                    cols_stats[idx].markdown(f"""
+                        <div class='stat-box'>
+                            <h2 style='margin:0; color:#d4af37;'>{count}x</h2>
+                            <span style='font-size:1.1em;'>{art_name}</span>
+                        </div>
+                    """, unsafe_allow_html=True)
+        else:
+            st.info("Sobald Termine gebucht werden, siehst du hier die Hits!")
+            
+        st.write("---")
         col_f1, col_f2 = st.columns([1, 2])
         with col_f1:
+            st.markdown("<h4>Hygiene-Puffer & Zeiten</h4>")
+            st.session_state.puffer_zeit = st.number_input("Pufferzeit zwischen Kunden (Minuten)", value=st.session_state.puffer_zeit, step=5)
+            st.write("---")
+            st.markdown("<h4>Transaktion buchen</h4>", unsafe_allow_html=True)
             f_datum = st.date_input("Datum", datetime.date.today(), key="fin_d")
             f_typ = st.selectbox("Typ", ["Einnahme", "Ausgabe"])
-            f_kat = st.text_input("Kategorie")
+            f_kat = st.text_input("Kategorie", placeholder="z.B. Materialeinkauf")
             f_betrag = st.number_input("Betrag in €", min_value=0.0)
             if st.button("Eintrag Speichern"):
                 neuer_eintrag = pd.DataFrame([[f_datum, f_typ, f_kat, f_betrag]], columns=["Datum", "Typ", "Kategorie", "Betrag (€)"])
@@ -380,12 +378,19 @@ elif st.session_state.user == "Admin":
                 st.rerun()
         with col_f2:
             st.dataframe(st.session_state.finanzen, use_container_width=True)
+            if not st.session_state.finanzen.empty:
+                st.bar_chart(data=st.session_state.finanzen, x="Typ", y="Betrag (€)", color="Typ")
 
 # --- SEITE: KUNDEN-BUCHUNG ---
 else:
     show_logo_and_header()
     with st.sidebar:
-        st.write(f"Willkommen, **{st.session_state.user}**!")
+        st.write(f"🌸 Kundin: **{st.session_state.user}**")
+        st.write("---")
+        if st.session_state.user in st.session_state.kunden_liste:
+            k_info = st.session_state.kunden_liste[st.session_state.user]
+            st.write(f"☕ Dein Wunschgetränk:  \n*{k_info['Kaffee']}*")
+            
         if st.button("Abmelden"):
             st.session_state.user = None
             st.rerun()
@@ -395,11 +400,11 @@ else:
     benoetigte_zeit = st.session_state.zeiten_naegel[nagel_wunsch]
     gesamte_blockade_zeit = benoetigte_zeit + st.session_state.puffer_zeit
     
-    st.info(f"Für {nagel_wunsch} werden {benoetigte_zeit} Minuten eingeplant.")
+    st.info(f"Für {nagel_wunsch} werden {benoetigte_zeit} Minuten pure Wellness eingeplant.")
     
     freie_anzeige = st.session_state.freie_slots[st.session_state.freie_slots["Status"] == "Frei"]
     if freie_anzeige.empty:
-        st.warning("Aktuell sind leider keine freien Termine freigeschaltet.")
+        st.warning("Aktuell sind leider keine freien Termine freigeschaltet. Bitte schaue später noch einmal vorbei!")
     else:
         for idx, row in freie_anzeige.iterrows():
             verfuegbare_minuten = int(row["Dauer_Minuten"])
@@ -408,13 +413,17 @@ else:
                 col_slot.write(f"📅 **{row['Datum']}** | ⏰ Von {row['Startzeit']} bis {row['Endzeit']} Uhr")
                 if col_buch_btn.button("Jetzt buchen", key=f"book_{idx}"):
                     st.session_state.freie_slots.at[idx, "Status"] = "Gebucht"
+                    
+                    if st.session_state.feilen_bestand > 0:
+                        st.session_state.feilen_bestand -= 1
+                    
                     kunden_farbe = "#721c24"
-                    if not st.session_state.kunden.empty:
-                        treffer = st.session_state.kunden[st.session_state.kunden["Kunden-Name"] == st.session_state.user]
-                        if not treffer.empty: kunden_farbe = treffer.iloc[0]["Farbe"]
+                    if st.session_state.user in st.session_state.kunden_liste:
+                        kunden_farbe = st.session_state.kunden_liste[st.session_state.user]["Farbe"]
                     
                     neuer_termin = pd.DataFrame([[row['Datum'], row['Startzeit'], st.session_state.user, nagel_wunsch, gesamte_blockade_zeit, kunden_farbe]], 
                                                 columns=["Datum", "Uhrzeit", "Kunde", "Typ", "Dauer_Gesamt", "Farbe"])
                     st.session_state.termine = pd.concat([st.session_state.termine, neuer_termin], ignore_index=True)
-                    st.success("Erfolgreich gebucht! 🎉")
+                    st.success("Erfolgreich gebucht! Wir freuen uns auf dich! 🎉")
                     st.rerun()
+                    
