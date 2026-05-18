@@ -19,17 +19,17 @@ if 'zeiten_naegel' not in st.session_state:
     st.session_state.zeiten_naegel = {"Neumodellage": 120, "Auffüllen": 90, "French / Extra Design": 45}
 if 'puffer_zeit' not in st.session_state: st.session_state.puffer_zeit = 20
 
-# 📢 NEU: Speicher für das Schwarze Brett (Studio-News)
+# 📢 Speicher für das Schwarze Brett (Studio-News)
 if 'studio_news' not in st.session_state:
     st.session_state.studio_news = "✨ Willkommen im Redline Studio! Ab sofort über 20 neue Chrome-Pigmente verfügbar! ✨"
 if 'news_aktiv' not in st.session_state:
     st.session_state.news_aktiv = True
 
-# 🗃️ NEU: Speicher für den intelligenten Material-Warner
+# 🗃️ Speicher für den intelligenten Material-Warner
 if 'feilen_bestand' not in st.session_state:
-    st.session_state.feilen_bestand = 20  # Startwert: Eine Packung
+    st.session_state.feilen_bestand = 20  
 if 'feilen_warnlimit' not in st.session_state:
-    st.session_state.feilen_warnlimit = 5  # Standard-Warnung ab 5 Stück
+    st.session_state.feilen_warnlimit = 5  
 
 # Erweiterte Kundenstruktur
 if 'kunden_liste' not in st.session_state:
@@ -201,7 +201,6 @@ def show_logo_and_header():
         </div>
     """, unsafe_allow_html=True)
     
-    # 📢 Zeigt das Schwarze Brett an, wenn es vom Admin aktiviert wurde
     if st.session_state.news_aktiv and st.session_state.studio_news:
         st.markdown(f"<div class='news-banner'>📢 {st.session_state.studio_news}</div>", unsafe_allow_html=True)
 
@@ -231,7 +230,6 @@ if st.session_state.user is None:
 elif st.session_state.user == "Admin":
     show_logo_and_header()
     
-    # ⚠️ LIVE-MATERIAL-WARNUNG DIREKT OBEN ANZEIGEN
     if st.session_state.feilen_bestand <= st.session_state.feilen_warnlimit:
         st.markdown(f"""
             <div class='material-alert'>
@@ -246,8 +244,6 @@ elif st.session_state.user == "Admin":
         heute_str = datetime.date.today().strftime('%Y-%m-%d')
         termine_heute = len(st.session_state.termine[st.session_state.termine["Datum"] == heute_str]) if not st.session_state.termine.empty else 0
         st.metric(label="Termine heute", value=termine_heute)
-        
-        # Schnellanzeige für Feilen in der Sidebar
         st.metric(label="Feilen übrig", value=f"{st.session_state.feilen_bestand} Stk.")
         
         if st.button("Abmelden", use_container_width=True):
@@ -286,7 +282,8 @@ elif st.session_state.user == "Admin":
                     st.rerun()
             
             st.write("---")
-            st.dataframe(st.freie_slots, use_container_width=True)
+            # 🌟 HIER WAR DER FEHLER BEHOBEN: st.session_state statt st.
+            st.dataframe(st.session_state.freie_slots, use_container_width=True)
             if st.button("Alle Slots zurücksetzen"):
                 st.session_state.freie_slots = pd.DataFrame(columns=["Datum", "Startzeit", "Endzeit", "Dauer_Minuten", "Feiertag-Hinweis", "Status"])
                 st.rerun()
@@ -318,7 +315,7 @@ elif st.session_state.user == "Admin":
                     txt_msg = f"Hallo {t['Kunde']}, ich freue mich auf unseren Nagel-Termin am {t['Datum']} um {t['Uhrzeit']} Uhr im Redline Studio! 💅"
                     st.text_area("📋 Fertiger WhatsApp-Text zum Kopieren:", value=txt_msg, height=70, key=f"wa_{t['Kunde']}_{t['Uhrzeit']}")
 
-    # TAB 2: DIGITALE LUXUS-KARTEI
+# --- TAB 2: DIGITALE LUXUS-KARTEI ---
     with menue[1]:
         st.subheader("👥 Redline Premium Kundenkartei")
         col_k_liste, col_k_akte = st.columns([1, 2])
@@ -338,17 +335,17 @@ elif st.session_state.user == "Admin":
             if ausgewaehlter_kunde:
                 akte = st.session_state.kunden_liste[ausgewaehlter_kunde]
                 st.markdown(f"<div class='kunden-akte'><h3>👑 VIP Akte: {ausgewaehlter_kunde}</h3>", unsafe_allow_html=True)
-                akte["Telefon"] = st.text_input("📞 Telefonnummer:", akte["Telefon"])
-                akte["Kaffee"] = st.text_input("☕ Kaffee- / Getränkevorliebe:", akte["Kaffee"])
-                akte["Allergien"] = st.text_input("⚠️ Allergien / Empfindlichkeiten:", akte["Allergien"])
-                akte["Notizen"] = st.text_area("📝 Besondere Design-Wünsche & Notizen:", akte["Notizen"])
-                akte["Farbe"] = st.color_picker("🎨 Eigene Kalender-Farbe für diese Kundin:", akte["Farbe"])
+                akte["Telefon"] = st.text_input("📞 Telefonnummer:", akte["Telefon"], key=f"tel_{ausgewaehlter_kunde}")
+                akte["Kaffee"] = st.text_input("☕ Kaffee- / Getränkevorliebe:", akte["Kaffee"], key=f"kaf_{ausgewaehlter_kunde}")
+                akte["Allergien"] = st.text_input("⚠️ Allergien / Empfindlichkeiten:", akte["Allergien"], key=f"all_{ausgewaehlter_kunde}")
+                akte["Notizen"] = st.text_area("📝 Besondere Design-Wünsche & Notizen:", akte["Notizen"], key=f"not_{ausgewaehlter_kunde}")
+                akte["Farbe"] = st.color_picker("🎨 Eigene Kalender-Farbe für diese Kundin:", akte["Farbe"], key=f"col_{ausgewaehlter_kunde}")
                 
                 st.write("---")
                 st.markdown("<h4>🖼️ Foto-Galerie</h4>", unsafe_allow_html=True)
                 hochgeladenes_foto = st.file_uploader("Neues Foto hochladen:", type=["jpg", "png", "jpeg"], key=f"img_{ausgewaehlter_kunde}")
                 if hochgeladenes_foto:
-                    if st.button("Foto in Akte speichern"):
+                    if st.button("Foto in Akte speichern", key=f"save_img_{ausgewaehlter_kunde}"):
                         akte["Fotos"].append(hochgeladenes_foto)
                         st.success("Bild hinzugefügt!")
                         st.rerun()
@@ -359,10 +356,9 @@ elif st.session_state.user == "Admin":
                         cols_img[idx % 3].image(img, use_container_width=True, caption=f"Modellage {idx+1}")
                 st.markdown("</div>", unsafe_allow_html=True)
 
-    # TAB 3: NEU -> SCHWARZES BRETT & INTELLIGENTES LAGER
+    # TAB 3: SCHWARZES BRETT & INTELLIGENTES LAGER
     with menue[2]:
         st.subheader("📢 Studio-Management & Material-Warner")
-        
         col_board, col_lager = st.columns(2)
         
         with col_board:
@@ -376,11 +372,7 @@ elif st.session_state.user == "Admin":
         with col_lager:
             st.markdown("<div class='card'><h4>📦 Intelligenter Nagelfeilen-Warner</h4></div>", unsafe_allow_html=True)
             st.write("Das System zieht bei jeder erfolgreichen Kundenbuchung vollautomatisch 1 Feile ab.")
-            
-            # Einstellen des aktuellen Bestands
             st.session_state.feilen_bestand = st.number_input("Aktueller Feilenbestand im Studio (Stück):", min_value=0, value=st.session_state.feilen_bestand, step=1)
-            
-            # WUNSCH-LIMIT SELBST EINSTELLEN (Regler)
             st.session_state.feilen_warnlimit = st.slider("Ab wie vielen verbleibenden Feilen möchtest du gewarnt werden?", min_value=1, max_value=40, value=st.session_state.feilen_warnlimit)
             
             st.write("---")
@@ -510,7 +502,6 @@ else:
                 if col_buch_btn.button("Jetzt buchen", key=f"book_{idx}"):
                     st.session_state.freie_slots.at[idx, "Status"] = "Gebucht"
                     
-                    # 📉 FEILEN-BESTAND DIREKT BEI BUCHUNG REDUZIEREN
                     if st.session_state.feilen_bestand > 0:
                         st.session_state.feilen_bestand -= 1
                     
