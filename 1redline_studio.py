@@ -356,7 +356,7 @@ if st.session_state.user is None:
             with st.form(key="login_form_comprehensive", clear_on_submit=False):
                 st.markdown("##### Bitte Identität nachweisen oder Admin-Code eingeben")
                 passwort_verbergen = st.checkbox("🔒 Sicherheits-Modus aktivieren (Verdeckte Eingabe)", key="chk_sec_comp")
-                input_type = "password" if passwort_verbergen else "text"
+                input_type = "password" if passwort_verbergen else "default"
                 
                 name_eingabe = st.text_input(
                     "Dein vollständiger Name ODER Admin-Passwort *", 
@@ -1098,4 +1098,5 @@ else:
                     
                     st.success("🎉 Deine Terminanfrage wurde erfolgreich an das Studio übermittelt! Sobald das Studio den Termin geprüft und freigegeben hat, siehst du ihn als bestätigt.")
                     st.rerun()
-                    
+
+
