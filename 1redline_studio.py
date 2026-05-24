@@ -97,15 +97,36 @@ if 'datenschutz_vorlage' not in st.session_state:
         "Die Daten werden absolut vertraulich behandelt, verschlüsselt hinterlegt und niemals an Dritte weitergegeben."
     )
 
-# Premium Kundenstruktur (Kundenkartei)
-if 'kunden_liste' not in st.session_state:
-    st.session_state.kunden_liste = {
-        "Beispiel Kundin": {
-            "Telefon": "+49 123 456789", "Farbe": "#D4A3A3",
-            "Kaffee": "Cappuccino mit Hafermilch", "Allergien": "Keine", "Notizen": "Bevorzugt mattes Finish", 
-            "Anamnese_Text": "Vom Admin ausgefüllt: Kundin hat gesunde Naturnägel. Keine Allergien bekannt.", "DSGVO_Akzeptiert": True, "Fotos": []
+# ==============================================================================
+# NEU: LIVE-VERBINDUNG ZU GOOGLE SHEETS (KUNDENKARTEI)
+# ==============================================================================
+try:
+    conn = st.connection("gsheets", type=None)
+    df_kunden = conn.read(worksheet="Kunden", ttl="5m")
+    
+    if not df_kunden.empty:
+        st.session_state.kunden_liste = {}
+        for _, row in df_kunden.iterrows():
+            name_key = str(row["Name"]).strip()
+            st.session_state.kunden_liste[name_key] = {
+                "Telefon": str(row["Telefon"]) if pd.notna(row["Telefon"]) else "",
+                "Farbe": str(row["Farbe"]) if pd.notna(row["Farbe"]) else "#D4A3A3",
+                "Kaffee": str(row["Kaffee"]) if pd.notna(row["Kaffee"]) else "",
+                "Allergien": str(row["Allergien"]) if pd.notna(row["Allergien"]) else "Keine",
+                "Notizen": str(row["Notizen"]) if pd.notna(row["Notizen"]) else "",
+                "Anamnese_Text": str(row["Anamnese_Text"]) if pd.notna(row["Anamnese_Text"]) else "Noch kein Befund eingetragen.",
+                "DSGVO_Akzeptiert": bool(row["DSGVO_Akzeptiert"]) if pd.notna(row["DSGVO_Akzeptiert"]) else False,
+                "Fotos": []
+            }
+    else:
+        st.session_state.kunden_liste = {
+            "Beispiel Kundin": {"Telefon": "+49 123", "Farbe": "#D4A3A3", "Kaffee": "Cappuccino", "Allergien": "Keine", "Notizen": "", "Anamnese_Text": "Gesund", "DSGVO_Akzeptiert": True, "Fotos": []}
         }
-    }
+except Exception as e:
+    if 'kunden_liste' not in st.session_state:
+        st.session_state.kunden_liste = {
+            "Beispiel Kundin": {"Telefon": "+49 123", "Farbe": "#D4A3A3", "Kaffee": "Cappuccino", "Allergien": "Keine", "Notizen": "", "Anamnese_Text": "Gesund", "DSGVO_Akzeptiert": True, "Fotos": []}
+        }
 
 # Tabellen-Strukturen für Termine, Arbeits-Slots und Finanzen
 if 'freie_slots' not in st.session_state: 
@@ -406,17 +427,47 @@ if st.session_state.user is None:
                     elif reg_name.strip() in st.session_state.kunden_liste:
                         st.error("Dieser Name ist bereits vergeben. Logge dich bitte regulär ein.")
                     else:
-                        neuer_name = reg_name.strip()
-                        st.session_state.kunden_liste[neuer_name] = {
-                            "Telefon": reg_tel.strip(),
-                            "Farbe": st.session_state.color_primary,
-                            "Kaffee": reg_kaffee.strip() if reg_kaffee.strip() else "Keine Angabe",
-                            "Allergien": reg_allergien.strip() if reg_allergien.strip() else "Keine",
-                            "Notizen": reg_notizen.strip(),
-                            "Anamnese_Text": "Noch nicht vom Admin erhoben. (Wird beim ersten Termin durchgeführt.)",
-                            "DSGVO_Akzeptiert": True,
-                            "Fotos": []
-                        }
+    neuer_name = reg_name.strip()
+    
+    # 1. Wie gewohnt in der Live-Sitzung speichern
+    st.session_state.kunden_liste[neuer_name] = {
+        "Telefon": reg_tel.strip(),
+        "Farbe": st.session_state.color_primary,
+        "Kaffee": reg_kaffee.strip() if reg_kaffee.strip() else "Keine Angabe",
+        "Allergien": reg_allergien.strip() if reg_allergien.strip() else "Keine",
+        "Notizen": reg_notizen.strip(),
+        "Anamnese_Text": "Noch nicht vom Admin erhoben. (Wird beim ersten Termin durchgeführt.)",
+        "DSGVO_Akzeptiert": True,
+        "Fotos": []
+    }
+    
+    # 2. NEU: Direkt in die Google Tabelle hochladen
+    try:
+        # Wir erstellen eine neue Zeile als Daten-Tabelle (DataFrame)
+        neue_zeile = pd.DataFrame([{
+            "Name": highway_name,
+            "Telefon": reg_tel.strip(),
+            "Farbe": st.session_state.color_primary,
+            "Kaffee": reg_kaffee.strip() if reg_kaffee.strip() else "Keine Angabe",
+            "Allergien": reg_allergien.strip() if reg_allergien.strip() else "Keine",
+            "Notizen": reg_notizen.strip(),
+            "Anamnese_Text": "Noch nicht vom Admin erhoben.",
+            "DSGVO_Akzeptiert": True
+        }])
+        
+        # Verbindung holen und anhängen (append)
+        conn = st.connection("gsheets", type=None)
+        # Streamlit bietet für gsheets oft '.create' oder wir nutzen direkt ein Update. 
+        # Der sicherste Weg über st.connection("gsheets"):
+        existing_df = conn.read(worksheet="Kunden")
+        updated_df = pd.concat([existing_df, neue_zeile], ignore_index=True)
+        conn.update(worksheet="Kunden", data=updated_df)
+    except Exception as e:
+        st.warning("Hinweis: Kartei lokal erstellt, aber Google-Synchronisation verzögert.")
+
+    st.session_state.user = neuer_name
+    st.success("Konto erfolgreich generiert und eingeloggt! Erlebe Redline Studio. 🎉")
+    st.rerun()
                         st.session_state.user = neuer_name
                         st.success("Konto erfolgreich generiert und eingeloggt! Erlebe Redline Studio. 🎉")
                         st.rerun()
