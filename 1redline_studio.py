@@ -426,7 +426,7 @@ if st.session_state.user is None:
                         st.error("Die Zustimmung zum Datenschutz ist gesetzlich zwingend erforderlich.")
                     elif reg_name.strip() in st.session_state.kunden_liste:
                         st.error("Dieser Name ist bereits vergeben. Logge dich bitte regulär ein.")
-                   else:
+              else:
             neuer_name = reg_name.strip()
             
             # 1. In der Live-Sitzung des Browsers speichern
