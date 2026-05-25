@@ -445,7 +445,7 @@ if st.session_state.user is None:
     try:
         # Wir erstellen eine neue Zeile als Daten-Tabelle (DataFrame)
         neue_zeile = pd.DataFrame([{
-            "Name": highway_name,
+            "Name": neuer_name,
             "Telefon": reg_tel.strip(),
             "Farbe": st.session_state.color_primary,
             "Kaffee": reg_kaffee.strip() if reg_kaffee.strip() else "Keine Angabe",
@@ -1149,5 +1149,6 @@ else:
                     
                     st.success("🎉 Deine Terminanfrage wurde erfolgreich an das Studio übermittelt! Sobald das Studio den Termin geprüft und freigegeben hat, siehst du ihn als bestätigt.")
                     st.rerun()
+                    
 
 
