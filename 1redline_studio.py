@@ -419,15 +419,15 @@ if st.session_state.user is None:
                 
                 submit_reg = st.form_submit_button("Kundenkartei jetzt absenden ✨", use_container_width=True)
 
-               if submit_reg:
-                if not reg_name.strip():
-                    st.error("Bitte einen gültigen Namen eintragen.")
-                elif not reg_dsgvo:
-                    st.error("Die Zustimmung zum Datenschutz ist gesetzlich zwingend erforderlich.")
-                elif reg_name.strip() in st.session_state.kunden_liste:
-                    st.error("Dieser Name ist bereits vergeben. Logge dich bitte regulär ein.")
-                else:
-                    neuer_name = reg_name.strip()
+                if submit_reg:
+                    if not reg_name.strip():
+                        st.error("Bitte einen gültigen Namen eintragen.")
+                    elif not reg_dsgvo:
+                        st.error("Die Zustimmung zum Datenschutz ist gesetzlich zwingend erforderlich.")
+                    elif reg_name.strip() in st.session_state.kunden_liste:
+                        st.error("Dieser Name ist bereits vergeben. Logge dich bitte regulär ein.")
+                    else:
+                         neuer_name = reg_name.strip()
                     
                     # 1. In der Live-Sitzung des Browsers speichern
                     st.session_state.kunden_liste[neuer_name] = {
