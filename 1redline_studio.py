@@ -418,8 +418,8 @@ if st.session_state.user is None:
                 reg_dsgvo = st.checkbox("Ich stimme den Datenschutzbestimmungen zur elektronischen Speicherung vollinhaltlich zu. *")
                 
                 submit_reg = st.form_submit_button("Kundenkartei jetzt absenden ✨", use_container_width=True)
-                
-                if submit_reg:
+
+            if submit_reg:
         if not reg_name.strip():
             st.error("Bitte einen gültigen Namen eintragen.")
         elif not reg_dsgvo:
@@ -429,7 +429,7 @@ if st.session_state.user is None:
         else:
             neuer_name = reg_name.strip()
             
-            # 1. Wie gewohnt in der Live-Sitzung speichern
+            # 1. In der Live-Sitzung des Browsers speichern
             st.session_state.kunden_liste[neuer_name] = {
                 "Telefon": reg_tel.strip(),
                 "Farbe": st.session_state.color_primary,
@@ -441,10 +441,18 @@ if st.session_state.user is None:
                 "Fotos": []
             }
             
-            # 2. NEU: Direkt in die Google Tabelle hochladen
+            # 2. Direkt live in die Google Tabelle hochladen
             try:
-                # Wir erstellen eine neue Zeile als Daten-Tabelle (DataFrame)
                 neue_zeile = pd.DataFrame([{
+                    "Name": neuer_name,
+                    "Telefon": reg_tel.strip(),
+                    "Farbe": st.session_state.color_primary,
+                    "Kaffee": reg_kaffee.strip() if reg_kaffee.strip() else "Keine Angabe",
+                    "Allergien": reg_allergien.strip() if reg_allergien.strip() else "Keine",
+                    "Notizen": reg_notizen.strip(),
+                    "Anamnese_Text": "Noch nicht vom Admin erhoben.",
+                    "DSGVO_Akzeptiert": True
+                }])
                 
                 conn = st.connection("gsheets", type=None)
                 existing_df = conn.read(worksheet="Kunden")
@@ -453,6 +461,10 @@ if st.session_state.user is None:
             except Exception as e:
                 st.warning("Hinweis: Kartei lokal erstellt, aber Google-Synchronisation verzögert.")
 
+            st.session_state.user = neuer_name
+            st.success("Konto erfolgreich generiert und eingeloggt! Erlebe Redline Studio. 🎉")
+            st.rerun()
+            
             st.session_state.user = neuer_name
             st.success("Konto erfolgreich generiert und eingeloggt! Erlebe Redline Studio. 🎉")
             st.rerun()
