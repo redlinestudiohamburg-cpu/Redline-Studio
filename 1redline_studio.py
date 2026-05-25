@@ -426,21 +426,44 @@ if st.session_state.user is None:
                         st.error("Die Zustimmung zum Datenschutz ist gesetzlich zwingend erforderlich.")
                     elif reg_name.strip() in st.session_state.kunden_liste:
                         st.error("Dieser Name ist bereits vergeben. Logge dich bitte regulär ein.")
-                    else:
-    neuer_name = reg_name.strip()
-    
-    # 1. Wie gewohnt in der Live-Sitzung speichern
-    st.session_state.kunden_liste[neuer_name] = {
-        "Telefon": reg_tel.strip(),
-        "Farbe": st.session_state.color_primary,
-        "Kaffee": reg_kaffee.strip() if reg_kaffee.strip() else "Keine Angabe",
-        "Allergien": reg_allergien.strip() if reg_allergien.strip() else "Keine",
-        "Notizen": reg_notizen.strip(),
-        "Anamnese_Text": "Noch nicht vom Admin erhoben. (Wird beim ersten Termin durchgeführt.)",
-        "DSGVO_Akzeptiert": True,
-        "Fotos": []
-    }
-    
+                   else:
+            neuer_name = reg_name.strip()
+            
+            # 1. In der Live-Sitzung des Browsers speichern
+            st.session_state.kunden_liste[neuer_name] = {
+                "Telefon": reg_tel.strip(),
+                "Farbe": st.session_state.color_primary,
+                "Kaffee": reg_kaffee.strip() if reg_kaffee.strip() else "Keine Angabe",
+                "Allergien": reg_allergien.strip() if reg_allergien.strip() else "Keine",
+                "Notizen": reg_notizen.strip(),
+                "Anamnese_Text": "Noch nicht vom Admin erhoben. (Wird beim ersten Termin durchgeführt.)",
+                "DSGVO_Akzeptiert": True,
+                "Fotos": []
+            }
+            
+            # 2. Direkt live in die Google Tabelle hochladen
+            try:
+                neue_zeile = pd.DataFrame([{
+                    "Name": neuer_name,
+                    "Telefon": reg_tel.strip(),
+                    "Farbe": st.session_state.color_primary,
+                    "Kaffee": reg_kaffee.strip() if reg_kaffee.strip() else "Keine Angabe",
+                    "Allergien": reg_allergien.strip() if reg_allergien.strip() else "Keine",
+                    "Notizen": reg_notizen.strip(),
+                    "Anamnese_Text": "Noch nicht vom Admin erhoben.",
+                    "DSGVO_Akzeptiert": True
+                }])
+                
+                conn = st.connection("gsheets", type=None)
+                existing_df = conn.read(worksheet="Kunden")
+                updated_df = pd.concat([existing_df, neue_zeile], ignore_index=True)
+                conn.update(worksheet="Kunden", data=updated_df)
+            except Exception as e:
+                st.warning("Hinweis: Kartei lokal erstellt, aber Google-Synchronisation verzögert.")
+
+            st.session_state.user = neuer_name
+            st.success("Konto erfolgreich generiert und eingeloggt! Erlebe Redline Studio. 🎉")
+            st.rerun()
     # 2. NEU: Direkt in die Google Tabelle hochladen
     try:
         # Wir erstellen eine neue Zeile als Daten-Tabelle (DataFrame)
@@ -1149,6 +1172,6 @@ else:
                     
                     st.success("🎉 Deine Terminanfrage wurde erfolgreich an das Studio übermittelt! Sobald das Studio den Termin geprüft und freigegeben hat, siehst du ihn als bestätigt.")
                     st.rerun()
-                    
+
 
 
