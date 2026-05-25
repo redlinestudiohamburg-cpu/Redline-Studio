@@ -420,16 +420,16 @@ if st.session_state.user is None:
                 submit_reg = st.form_submit_button("Kundenkartei jetzt absenden ✨", use_container_width=True)
                 
                 if submit_reg:
-                    if not reg_name.strip():
-                        st.error("Bitte einen gültigen Namen eintragen.")
-                    elif not reg_dsgvo:
-                        st.error("Die Zustimmung zum Datenschutz ist gesetzlich zwingend erforderlich.")
-                    elif reg_name.strip() in st.session_state.kunden_liste:
-                        st.error("Dieser Name ist bereits vergeben. Logge dich bitte regulär ein.")
-              else:
+        if not reg_name.strip():
+            st.error("Bitte einen gültigen Namen eintragen.")
+        elif not reg_dsgvo:
+            st.error("Die Zustimmung zum Datenschutz ist gesetzlich zwingend erforderlich.")
+        elif reg_name.strip() in st.session_state.kunden_liste:
+            st.error("Dieser Name ist bereits vergeben. Logge dich bitte regulär ein.")
+        else:
             neuer_name = reg_name.strip()
             
-            # 1. In der Live-Sitzung des Browsers speichern
+            # 1. Wie gewohnt in der Live-Sitzung speichern
             st.session_state.kunden_liste[neuer_name] = {
                 "Telefon": reg_tel.strip(),
                 "Farbe": st.session_state.color_primary,
@@ -441,18 +441,10 @@ if st.session_state.user is None:
                 "Fotos": []
             }
             
-            # 2. Direkt live in die Google Tabelle hochladen
+            # 2. NEU: Direkt in die Google Tabelle hochladen
             try:
+                # Wir erstellen eine neue Zeile als Daten-Tabelle (DataFrame)
                 neue_zeile = pd.DataFrame([{
-                    "Name": neuer_name,
-                    "Telefon": reg_tel.strip(),
-                    "Farbe": st.session_state.color_primary,
-                    "Kaffee": reg_kaffee.strip() if reg_kaffee.strip() else "Keine Angabe",
-                    "Allergien": reg_allergien.strip() if reg_allergien.strip() else "Keine",
-                    "Notizen": reg_notizen.strip(),
-                    "Anamnese_Text": "Noch nicht vom Admin erhoben.",
-                    "DSGVO_Akzeptiert": True
-                }])
                 
                 conn = st.connection("gsheets", type=None)
                 existing_df = conn.read(worksheet="Kunden")
